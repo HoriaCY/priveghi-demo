@@ -1,0 +1,135 @@
+/* Tokens and table styles lifted from priveghi_prototype_v4.html. Dark only (candlelight logic).
+   Selection is told by contour weight, never glow; nothing pulses, bounces or springs. */
+@import './fonts.css';
+
+:root {
+  /* the nine anchors: docs/vibe/osanda_anchors.gpl */
+  --soot: #171310;
+  --wax: #E9DCB5;
+  --lime: #F2EDE2;
+  --voronet: #2E5E7E;
+  --red: #B5342C;
+  --clot: #6E2320;
+  --gold: #C39A3B;
+  --verdigris: #4F7A66;
+  --earth: #4A3B2C;
+  /* derived neutrals: warm, soot-adjacent */
+  --room: #110e0b;
+  --wood-mid: #6b5a44;
+  --wood-light: #8f7d60;
+  --wax-dim: #b9ad8c;
+  --paper: #e4d7b2;
+  --linen: #d8ccab;
+  --soot-smudge: rgba(23, 19, 16, .55);
+  /* type */
+  --display: 'Cormorant Unicase', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --body: 'Alegreya', Georgia, 'Times New Roman', serif;
+  --label: 'Alegreya SC', 'Alegreya', Georgia, serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--room); color: var(--wax); overflow: hidden; }
+body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
+
+/* ---------- the reference frame ---------- */
+.stage {
+  position: absolute; left: 0; top: 0; width: 1280px; height: 720px;
+  transform-origin: 0 0; background: var(--soot); overflow: hidden;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none;
+}
+.stage .wall { position: absolute; inset: 0 0 auto 0; height: 300px; background: linear-gradient(to bottom, var(--room) 0, var(--soot) 100%); }
+.stage .cloth { position: absolute; left: 60px; right: 60px; top: 352px; bottom: 30px; background: var(--earth); }
+.stage .cloth .linen { position: absolute; inset: 14px; background: var(--linen); box-shadow: inset 0 0 0 2px var(--soot); }
+.stage .cloth .border { position: absolute; left: 20px; top: 20px; width: calc(100% - 40px); height: calc(100% - 40px); pointer-events: none; }
+.stage .pool { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; }
+.stage .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 62% 78%, transparent 30%, rgba(17, 14, 11, .55) 75%, rgba(17, 14, 11, .85) 100%); }
+
+/* the far side: another seat, dark, opened toward you (inverse perspective) */
+.stage .farside {
+  position: absolute; left: 0; right: 0; top: 0; height: 104px; display: flex; justify-content: center; gap: 18px; padding-top: 4px;
+  transform: perspective(600px) rotateX(18deg); transform-origin: 50% 100%; filter: brightness(.45);
+}
+.stage .farside .back { width: 70px; height: 98px; }
+.stage .farcandle { position: absolute; left: 1120px; top: 54px; width: 10px; height: 34px; opacity: .8; }
+.stage svg { display: block; width: 100%; height: 100%; }
+
+/* the screen of verbs */
+.verb { position: absolute; width: 150px; height: 236px; }
+.verb svg.niche { width: 150px; height: 210px; }
+.verb .vname {
+  position: absolute; left: -9px; right: -9px; top: 206px; text-align: center; font-family: var(--display); font-weight: 500;
+  font-size: 17px; color: var(--wax); line-height: 1.1; text-transform: uppercase; letter-spacing: .03em;
+}
+.verb .vname small { display: block; font-family: var(--label); font-size: 11px; color: var(--wax-dim); font-variant: small-caps; letter-spacing: .08em; text-transform: none; }
+.verb .taper { position: absolute; left: 136px; top: 100px; width: 22px; height: 86px; }
+.verb .rim { opacity: 0; transition: opacity .3s; }
+.verb.working .rim { opacity: 1; }
+.verb.accept .nicheframe { stroke-width: 4; }
+.darkdoor { position: absolute; width: 60px; height: 236px; }
+.darkdoor svg { height: 210px; }
+
+/* cards: one element per stack, in a layer above the pool and the vignette (as in the prototype) */
+.stage .cards { position: absolute; inset: 0; pointer-events: none; }
+.stage .cards > * { pointer-events: auto; }
+.stack { position: absolute; left: 0; top: 0; width: 108px; height: 151px; transition: transform .32s cubic-bezier(.2, 0, 0, 1); will-change: transform; }
+.stack .face, .stack .under { position: absolute; inset: 0; }
+.stack .face svg { filter: drop-shadow(var(--sx, 3px) var(--sy, 4px) 2px var(--soot-smudge)); }
+.stack .under { background: var(--earth); box-shadow: inset 0 0 0 1.5px var(--soot); display: none; }
+.stack .u1 { transform: translate(3px, 3px); }
+.stack .u2 { transform: translate(6px, 6px); }
+.stack.n2 .u1, .stack.n3 .u1, .stack.n3 .u2 { display: block; }
+/* the count of a stack: a paper tag, not a badge */
+.count {
+  position: absolute; right: -8px; top: -8px; min-width: 26px; height: 19px; padding: 0 4px; background: var(--lime); color: var(--soot);
+  border: 1.5px solid var(--soot); font: 14px/16px var(--label); text-align: center;
+}
+.count:empty { display: none; }
+.stack .grains { position: absolute; left: 0; top: 14px; width: 108px; height: 10px; }
+.stack.selected .face-contour { stroke-width: 3.2; }
+.cards .heart { position: absolute; width: 108px; height: 151px; }
+.cards .side { position: absolute; width: 45px; height: 63px; }
+.cards .heart svg, .cards .side svg { filter: drop-shadow(0 2px 2px var(--soot-smudge)); }
+.cards .side .face { position: absolute; inset: 0; }
+.cards .side .count { right: -7px; top: -9px; min-width: 22px; height: 16px; font-size: 12px; line-height: 13px; }
+
+/* the plank, the candle and its dish, bread and salt */
+.plank { position: absolute; width: 124px; height: 296px; }
+.maincandle { position: absolute; left: 1010px; top: 410px; width: 40px; height: 150px; pointer-events: none; }
+.dish { position: absolute; left: 990px; top: 538px; width: 80px; height: 22px; }
+.candle-label {
+  position: absolute; left: 970px; width: 120px; top: 563px; text-align: center; font-family: var(--display); font-weight: 500;
+  font-size: 16px; color: var(--earth); text-transform: uppercase; letter-spacing: .03em; line-height: 1;
+}
+.stilllife { position: absolute; left: 858px; top: 556px; width: 180px; height: 120px; pointer-events: none; }
+
+/* the flame breathes in two irregular frames; nothing else moves on its own */
+.flame { transform-origin: 50% 100%; animation: breathe 1.3s steps(1, end) infinite; }
+.flame.slow { animation-duration: 2.1s; }
+@keyframes breathe {
+  0% { transform: scale(1, 1); }
+  37% { transform: scale(.92, 1.06) translateX(.3px); }
+  61% { transform: scale(1.04, .95); }
+  83% { transform: scale(.96, 1.02) translateX(-.3px); }
+  100% { transform: scale(1, 1); }
+}
+
+/* portrait: a quiet card that asks for the phone to be turned */
+.rotate { position: fixed; inset: 0; display: grid; place-items: center; background: var(--room); }
+.rotate[hidden] { display: none; }
+.rotate svg { width: 160px; height: 160px; }
+
+/* the brief's diacritics test string: present for the font loader, never shown */
+.typetest { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.typetest.show {
+  position: fixed; left: 12px; top: 12px; width: auto; height: auto; clip-path: none; z-index: 10; padding: 10px 14px;
+  background: var(--soot); border: 1px solid var(--earth); color: var(--wax); line-height: 1.6; white-space: normal;
+}
+.typetest .d { font-family: var(--display); font-weight: 600; font-size: 24px; display: block; }
+.typetest .b { font-family: var(--body); font-size: 18px; display: block; }
+.typetest .l { font-family: var(--label); font-size: 18px; display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flame { animation: none; }
+  .stack { transition-duration: .09s; }
+}

@@ -1,0 +1,50 @@
+/* Self-hosted OFL faces (public/fonts/OFL-*.txt), subset to Latin, Latin-1, Latin Extended-A,
+   the comma-below S and T (U+0218-021B), dashes, quotes and the ellipsis. Block, never swap. */
+@font-face {
+  font-family: 'Alegreya';
+  src: url('../fonts/Alegreya-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+0218-021B, U+2013-2014, U+2018-201E, U+2026;
+}
+@font-face {
+  font-family: 'Alegreya';
+  src: url('../fonts/Alegreya-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+0218-021B, U+2013-2014, U+2018-201E, U+2026;
+}
+@font-face {
+  font-family: 'Alegreya';
+  src: url('../fonts/Alegreya-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+0218-021B, U+2013-2014, U+2018-201E, U+2026;
+}
+@font-face {
+  font-family: 'Alegreya SC';
+  src: url('../fonts/AlegreyaSC-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+0218-021B, U+2013-2014, U+2018-201E, U+2026;
+}
+@font-face {
+  font-family: 'Cormorant Unicase';
+  src: url('../fonts/CormorantUnicase-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+0218-021B, U+2013-2014, U+2018-201E, U+2026;
+}
+@font-face {
+  font-family: 'Cormorant Unicase';
+  src: url('../fonts/CormorantUnicase-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+0218-021B, U+2013-2014, U+2018-201E, U+2026;
+}

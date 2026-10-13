@@ -108,6 +108,8 @@ pub enum Recipe {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Run {
     pub recipe: Recipe,
+    /// How many closes the verb runs in all; the niche's taper burns down in these steps.
+    pub days: u8,
     /// Closes still to come, this one included, before it resolves.
     pub days_left: u8,
     pub started: u8,

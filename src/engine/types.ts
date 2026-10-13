@@ -20,7 +20,7 @@ export type Recipe =
   | { recipe: 'mourn_dor'; n: number }
   | { recipe: 'mourn_jale' };
 
-export interface Run { recipe: Recipe; days_left: number; started: number }
+export interface Run { recipe: Recipe; days: number; days_left: number; started: number }
 
 export interface Clock { day_ends_at: number; paused_left: number | null; precued: boolean; closing: boolean }
 
