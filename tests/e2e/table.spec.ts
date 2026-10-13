@@ -92,3 +92,15 @@ test('review markers, numbered for the README legend', async ({ page }) => {
   await expect(page.locator('.ann')).toHaveCount(11);
   await page.screenshot({ path: 'docs/shots/step-2/annotated-1280x720.png' });
 });
+
+test('the card sheet: every face on one page', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await page.goto('./?sheet');
+  await page.waitForFunction(() => document.body.dataset.ready === '1');
+  await expect(page.locator('.sheet-card')).toHaveCount(17);
+  expect(errors).toEqual([]);
+  await page.screenshot({ path: 'docs/shots/step-2/cards-sheet.png' });
+});

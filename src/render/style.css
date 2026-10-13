@@ -138,3 +138,7 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   .flame { animation: none; }
   .stack { transition-duration: .09s; }
 }
+
+/* ?sheet: every card face on one page */
+.sheet { position: fixed; inset: 0; display: grid; grid-template-columns: repeat(6, 180px); gap: 22px; padding: 24px; background: var(--soot); overflow: auto; align-content: start; justify-content: center; }
+.sheet-card { width: 180px; height: 252px; }
