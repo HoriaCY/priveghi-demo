@@ -1,0 +1,10 @@
+/target/
+/node_modules/
+/dist/
+/pkg/
+/test-results/
+/playwright-report/
+/shots/
+.env
+.env.*
+.DS_Store

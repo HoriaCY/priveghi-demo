@@ -1,0 +1,20 @@
+{
+  "name": "priveghi-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "wasm": "sh scripts/build-wasm.sh",
+    "dev": "npm run wasm && vite",
+    "build": "npm run wasm && tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "test:rules": "cargo test",
+    "test:e2e": "playwright test",
+    "check:privacy": "node scripts/privacy-check.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.57.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}

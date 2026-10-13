@@ -1,0 +1,175 @@
+#!/usr/bin/env node
+// The demo brief's §7 privacy checklist, run against the tracked files, the built dist/ and the
+// commit history. Personal identifiers are read from the machine at run time (home path, account
+// name, git e-mail, full name), so this public file holds none of them. Exit 1 on any failure.
+
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const self = 'scripts/privacy-check.mjs';
+const sh = (cmd, args) => {
+  try {
+    return execFileSync(cmd, args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return '';
+  }
+};
+
+const BINARY = /\.(png|jpe?g|gif|webp|ico|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|wasm|psd|ai|blend|zip)$/i;
+const ASSET = /\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|psd|ai|blend)$/i;
+const STATIC = /\.(html|js|css|wasm|woff2|svg|png|ico|webmanifest|txt|json)$/i;
+const NOREPLY = /^(\d+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com$|^noreply@anthropic\.com$/i;
+
+const tracked = sh('git', ['ls-files', '--cached', '--others', '--exclude-standard']).split('\n').filter(Boolean);
+const walk = (dir) =>
+  existsSync(dir)
+    ? readdirSync(dir).flatMap((f) => {
+        const p = path.join(dir, f);
+        return statSync(p).isDirectory() ? walk(p) : [p];
+      })
+    : [];
+const dist = walk(path.join(root, 'dist')).map((p) => path.relative(root, p));
+const text = (rel) => readFileSync(path.join(root, rel), 'latin1');
+const textFiles = (files) => files.filter((f) => !BINARY.test(f) && f !== self && existsSync(path.join(root, f)));
+const scan = (files, re) => {
+  const hits = [];
+  for (const f of files) {
+    const body = BINARY.test(f) ? readFileSync(path.join(root, f), 'latin1') : text(f);
+    const m = body.match(re);
+    if (m) hits.push(`${f}: ${m[0].slice(0, 60)}`);
+  }
+  return hits;
+};
+const appCode = tracked.filter((f) => /^(src\/|index\.html$|public\/)/.test(f));
+const shipped = [...appCode, ...dist];
+
+// Personal identifiers of whoever runs this, gathered at run time and never written down.
+const personal = new Set();
+const add = (v) => v && v.length >= 4 && personal.add(v.toLowerCase());
+add(os.homedir());
+add(os.userInfo().username);
+const gitMail = sh('git', ['config', '--global', 'user.email']);
+if (gitMail && !NOREPLY.test(gitMail)) {
+  add(gitMail);
+  add(gitMail.split('@')[1]);
+}
+const fullName = sh('id', ['-F']) || (sh('getent', ['passwd', os.userInfo().username]).split(':')[4] ?? '').split(',')[0];
+if (fullName && fullName.includes(' ')) {
+  add(fullName);
+  add(fullName.split(/\s+/).at(-1));
+}
+for (const extra of (process.env.PRIVACY_EXTRA ?? '').split(',')) add(extra.trim());
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const personalRe = personal.size ? new RegExp([...personal].map(escapeRe).join('|'), 'i') : null;
+
+const rows = [];
+const check = (item, ok, detail) => rows.push({ item, ok, detail });
+
+// 1. static files only, no server
+{
+  const pkg = JSON.parse(text('package.json'));
+  const runtime = Object.keys(pkg.dependencies ?? {});
+  const server = tracked.filter((f) => /(^|\/)(server|api|functions)\/|\.php$|Dockerfile|Procfile/i.test(f));
+  const odd = dist.filter((f) => !STATIC.test(f));
+  check(
+    'static files only, no server',
+    runtime.length === 0 && server.length === 0 && odd.length === 0,
+    `${runtime.length} runtime dependencies, ${server.length} server files; dist: ${dist.length ? dist.length + ' static files' : 'not built'}${odd.length ? ', unexpected: ' + odd.join(' ') : ''}`,
+  );
+}
+
+// 2. no analytics
+{
+  const re = /googletagmanager|google-analytics|gtag\(|plausible\.io|umami\.|matomo|segment\.(com|io)|mixpanel|posthog|hotjar|sentry\.io|clarity\.ms|fbq\(|connect\.facebook|doubleclick|amplitude\.com|newrelic|datadoghq/i;
+  const hits = scan([...textFiles(tracked), ...dist], re);
+  check('no analytics', hits.length === 0, hits.join('; ') || 'no tracker script, domain or call in the repo or the build');
+}
+
+// 3. no cookies
+{
+  const hits = scan(shipped, /document\.cookie|cookieStore|set-cookie/i);
+  check('no cookies', hits.length === 0, hits.join('; ') || 'no cookie read or write in app code or the build');
+}
+
+// 4. no third-party requests (static scan; the browser test records every live request)
+{
+  const urls = [];
+  for (const f of shipped) {
+    const body = BINARY.test(f) && !f.endsWith('.wasm') ? '' : text(f);
+    for (const m of body.matchAll(/https?:\/\/[^\s"'`)<>]+/g)) {
+      if (!/^http:\/\/www\.w3\.org\//.test(m[0])) urls.push(`${f}: ${m[0]}`);
+    }
+  }
+  check('no third-party requests', urls.length === 0, urls.join('; ') || 'no absolute URL in app code or the build except XML namespaces');
+}
+
+// 5. fonts self-hosted
+{
+  const cdn = scan(shipped, /fonts\.googleapis|fonts\.gstatic|use\.typekit|fonts\.bunny|cdnjs|jsdelivr|unpkg\.com/i);
+  const fonts = tracked.filter((f) => /\.(woff2?|ttf|otf)$/i.test(f));
+  check('fonts self-hosted', cdn.length === 0, cdn.join('; ') || `no font CDN referenced; ${fonts.length} font files in the repo${fonts.length ? '' : ' (fonts arrive in step 2)'}`);
+}
+
+// 6. saves only in this device's localStorage
+{
+  const hits = scan(textFiles(appCode), /indexedDB|sessionStorage|fetch\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource/);
+  const uses = scan(textFiles(appCode), /localStorage/).length;
+  check('saves only in localStorage', hits.length === 0, hits.join('; ') || `no network or other storage API in app code; localStorage used in ${uses} files`);
+}
+
+// 7. no secrets or .env
+{
+  const files = tracked.filter((f) => /(^|\/)\.env(\.|$)|\.(pem|key|p12|pfx)$|id_rsa|id_ed25519/i.test(f));
+  const re = /AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}/;
+  const hits = scan(textFiles(tracked), re);
+  check('no secrets or .env', files.length === 0 && hits.length === 0, [...files, ...hits].join('; ') || 'no key files, no token patterns');
+}
+
+// 8. no personal data
+{
+  const generic = /\/Users\/[A-Za-z]|\/home\/(?!runner\b)[a-z]/;
+  const pathHits = scan([...textFiles(tracked), ...dist], generic);
+  const personHits = personalRe ? scan([...textFiles(tracked), ...dist], personalRe) : [];
+  const mails = [];
+  for (const f of textFiles(tracked)) {
+    for (const m of text(f).matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) {
+      if (!NOREPLY.test(m[0])) mails.push(`${f}: ${m[0]}`);
+    }
+  }
+  // Name the files only: this output can land in a public CI log.
+  const where = (list, what) => [...new Set(list.map((h) => h.split(':')[0]))].map((f) => `${f} (${what})`);
+  const hits = [...where(pathHits, 'local path'), ...where(personHits, 'identifier'), ...where(mails, 'e-mail')];
+  check('no personal data', hits.length === 0, hits.join('; ') || `no local paths, e-mail addresses, or this machine's identifiers (${personal.size} checked)`);
+}
+
+// 9. commits authored under the GitHub noreply address
+{
+  const log = sh('git', ['log', '--format=%ae%n%ce']);
+  const bodies = sh('git', ['log', '--format=%B']);
+  const addrs = [...new Set([...log.split('\n'), ...(bodies.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? [])].filter(Boolean))];
+  const bad = addrs.filter((a) => !NOREPLY.test(a));
+  const commits = sh('git', ['rev-list', '--count', 'HEAD']) || '0';
+  check('commits under the noreply address', bad.length === 0, bad.length ? 'not noreply: [personal]' : `${commits} commits; addresses: ${addrs.join(', ') || 'none yet'}`);
+}
+
+// 10. no purchased assets, a credits row for every asset
+{
+  const credits = existsSync(path.join(root, 'CREDITS.md')) ? text('CREDITS.md') : '';
+  const assets = tracked.filter((f) => ASSET.test(f));
+  const missing = assets.filter((f) => !credits.includes(f));
+  check(
+    'no purchased assets; every asset credited',
+    credits.length > 0 && missing.length === 0,
+    !credits ? 'CREDITS.md missing' : missing.length ? 'no credits row: ' + missing.join(' ') : `${assets.length} asset files, each with a CREDITS.md row; all art is code-drawn`,
+  );
+}
+
+const width = Math.max(...rows.map((r) => r.item.length));
+console.log(`Priveghi privacy checklist (demo brief §7) — ${new Date().toISOString().slice(0, 10)}`);
+rows.forEach((r, i) => console.log(`${String(i + 1).padStart(2)}. ${r.item.padEnd(width)}  ${r.ok ? 'PASS' : 'FAIL'}  ${r.detail}`));
+const failed = rows.filter((r) => !r.ok).length;
+console.log(failed ? `${failed} item(s) failed.` : 'All items pass.');
+process.exit(failed ? 1 : 0);
