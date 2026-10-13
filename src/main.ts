@@ -28,6 +28,18 @@ const rotate = document.getElementById('rotate')!;
 rotate.innerHTML = rotateSVG();
 const table = new Table(stage);
 table.render(wake.state());
+if (params.has('annotate')) {
+  // numbered markers for review screenshots; README.md "What is on the table" is the legend
+  const MARKS: [number, number][] = [[452, 20], [100, 126], [272, 140], [784, 140], [1100, 140], [64, 384], [200, 366], [200, 520], [992, 400], [862, 560], [1084, 510]];
+  MARKS.forEach(([x, y], i) => {
+    const a = document.createElement('div');
+    a.className = 'ann';
+    a.textContent = String(i + 1);
+    a.style.left = `${x}px`;
+    a.style.top = `${y}px`;
+    stage.append(a);
+  });
+}
 
 const fit = () => fitStage(stage, rotate);
 fit();

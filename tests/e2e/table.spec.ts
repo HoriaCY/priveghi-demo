@@ -86,3 +86,9 @@ test('the diacritics string renders in all three faces', async ({ page }) => {
   }
   await page.locator('.typetest').screenshot({ path: 'docs/shots/step-2/typetest.png' });
 });
+
+test('review markers, numbered for the README legend', async ({ page }) => {
+  await open(page, 'fixture=wake&annotate', SIZES[2]);
+  await expect(page.locator('.ann')).toHaveCount(11);
+  await page.screenshot({ path: 'docs/shots/step-2/annotated-1280x720.png' });
+});

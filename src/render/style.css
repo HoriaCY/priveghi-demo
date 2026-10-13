@@ -61,7 +61,6 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   position: absolute; left: -9px; right: -9px; top: 206px; text-align: center; font-family: var(--display); font-weight: 500;
   font-size: 17px; color: var(--wax); line-height: 1.1; text-transform: uppercase; letter-spacing: .03em;
 }
-.verb .vname small { display: block; font-family: var(--label); font-size: 11px; color: var(--wax-dim); font-variant: small-caps; letter-spacing: .08em; text-transform: none; }
 .verb .taper { position: absolute; left: 136px; top: 100px; width: 22px; height: 86px; }
 .verb .rim { opacity: 0; transition: opacity .3s; }
 .verb.working .rim { opacity: 1; }
@@ -112,6 +111,12 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   61% { transform: scale(1.04, .95); }
   83% { transform: scale(.96, 1.02) translateX(-.3px); }
   100% { transform: scale(1, 1); }
+}
+
+/* review markers (?annotate): numbers only, the legend lives in the README */
+.ann {
+  position: absolute; width: 28px; height: 28px; border-radius: 50%; background: var(--wax); color: var(--soot);
+  border: 2px solid var(--soot); font: 600 16px/24px var(--body); text-align: center; z-index: 30; pointer-events: none;
 }
 
 /* portrait: a quiet card that asks for the phone to be turned */

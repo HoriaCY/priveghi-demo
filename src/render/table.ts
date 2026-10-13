@@ -72,7 +72,8 @@ export class Table {
       v.setAttribute('aria-label', `${LABELS[n.id].ro}, ${LABELS[n.id].gloss}`);
       v.innerHTML = nicheSVG(n.id, n);
       const taper = el('taper');
-      v.append(taper, el('vname', `${LABELS[n.id].ro}<small>${LABELS[n.id].gloss}</small>`));
+      // no English on the table: the gloss waits for localisation (ruled 2026-10-13)
+      v.append(taper, el('vname', LABELS[n.id].ro));
       at(v, nicheX(i), NICHE.top);
       stage.append(v);
       // the cards a niche holds ride in the card layer, above the vignette, as in the prototype
