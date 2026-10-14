@@ -119,3 +119,12 @@ export function pipsSVG(left: number, total: number): string {
   }
   return `<svg viewBox="0 0 ${total * 20} 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${s}</svg>`;
 }
+
+/** A memorial dish on the plank: empty while the day waits, coliva with a cross when kept, dark when missed. */
+export function markSVG(state: 'waiting' | 'held' | 'missed'): string {
+  const dish = `<path d="M3 22 Q22 30 41 22 L37 30 Q22 35 7 30 Z" fill="${state === 'missed' ? C.soot : C.earth}" stroke="${C.soot}" stroke-width="1.4"/>`;
+  const heap = state === 'held'
+    ? `<path d="M6 22 Q22 4 38 22 Z" fill="${C.lime}" stroke="${C.soot}" stroke-width="1.4"/><path d="M22 11 V20 M18 15.5 H26" stroke="${C.soot}" stroke-width="1.6"/>`
+    : '';
+  return `<svg viewBox="0 0 44 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${heap}${dish}</svg>`;
+}

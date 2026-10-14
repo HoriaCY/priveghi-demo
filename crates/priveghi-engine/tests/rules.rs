@@ -430,3 +430,79 @@ fn a_save_survives_browser_number_precision() {
     }
     assert_eq!(a, b);
 }
+
+/// Lists every beat. A new variant fails to compile here until it is added to the round-trip below.
+fn listed(e: &Event) {
+    use Event::*;
+    match e {
+        DayBegan
+        | Precue
+        | DayClosed { .. }
+        | Placed { .. }
+        | Unplaced { .. }
+        | Started { .. }
+        | Returned { .. }
+        | Decayed { .. }
+        | Rotted { .. }
+        | Resolved { .. }
+        | Arrived { .. }
+        | Consumed { .. }
+        | Pip { .. }
+        | JaleMourned { .. }
+        | Rested
+        | Tied { .. }
+        | WaxFed { .. }
+        | WaxBurned { .. }
+        | DarkClose { .. }
+        | FrantLocked
+        | FrantLifted
+        | Ended { .. }
+        | DoorAnswered
+        | Offered { .. }
+        | MarkHeld { .. }
+        | MarkMissed { .. }
+        | Left { .. } => {}
+    }
+}
+
+#[test]
+fn every_kind_of_beat_survives_a_save() {
+    use Event::*;
+    let beats = vec![
+        DayBegan,
+        Precue,
+        DayClosed { early: true },
+        Placed { cards: vec![1, 2], target: Target::Niche(Niche::Boci) },
+        Placed { cards: vec![3], target: Target::Candle },
+        Unplaced { cards: vec![1] },
+        Started { niche: Niche::Gazdui, recipe: Recipe::Trade { pay: Kind::Fier } },
+        Returned { niche: Niche::Umbla, cards: vec![4] },
+        Decayed { card: 5, grains: 2 },
+        Rotted { card: 5, jale: 6 },
+        Resolved { niche: Niche::Asculta },
+        Arrived { card: 7, kind: Kind::Nume },
+        Consumed { card: 8, kind: Kind::Binecuvantare },
+        Pip { bocete: 2 },
+        JaleMourned { n: 3 },
+        Rested,
+        Tied { cards: vec![9] },
+        WaxFed { wax: 5 },
+        WaxBurned { wax: 4 },
+        DarkClose { vigoare: 2 },
+        FrantLocked,
+        FrantLifted,
+        Ended { ending: Ending::Pomelnic },
+        DoorAnswered,
+        Offered { soroc: 3 },
+        MarkHeld { soroc: 3 },
+        MarkMissed { soroc: 9 },
+        Left { card: 10, kind: Kind::Negustor },
+    ];
+    for event in beats {
+        listed(&event);
+        let entry = Entry { day: 4, event };
+        let json = serde_json::to_string(&entry).unwrap();
+        let back: Entry = serde_json::from_str(&json).unwrap_or_else(|e| panic!("{json}: {e}"));
+        assert_eq!(back, entry);
+    }
+}

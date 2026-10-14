@@ -35,6 +35,18 @@ pub struct Config {
     pub sill: u8,
     /// Jale that break the watcher (Frant). Chapter §6.2; brief §3.6.
     pub jale_frant: u8,
+    /// Days a listening takes (brief §3.3) and a hosting at the hearth (brief §3.3).
+    pub asculta_zile: u8,
+    pub gazdui_zile: u8,
+    /// Full days a coliva waits on the cloth before it spoils. Chapter §6.5 `coliva_zile`.
+    pub coliva_zile: u8,
+    /// Cel Nenuntit's memorial days in the nine-day wake. Chapter §6.5 `soroace[]` 3/9/40.
+    pub soroace: Vec<u8>,
+    /// Days the peddler stays (chapter §6.6 `peddler_stay_zile`) and the day he comes back (RULINGS R20).
+    pub peddler_stay_zile: u8,
+    pub peddler_return_day: u8,
+    /// Days a blessing lasts. Brief §3.3, "Binecuvantare for a day".
+    pub binecuvantare_zile: u8,
 }
 
 impl Default for Config {
@@ -56,6 +68,13 @@ impl Default for Config {
             wax_grace: 0,
             sill: 3,
             jale_frant: 3,
+            asculta_zile: 1,
+            gazdui_zile: 1,
+            coliva_zile: 4,
+            soroace: vec![3, 9],
+            peddler_stay_zile: 2,
+            peddler_return_day: 7,
+            binecuvantare_zile: 1,
         }
     }
 }

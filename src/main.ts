@@ -53,7 +53,10 @@ function sound(e: Entry): void {
     case 'unplaced':
       return SOUND.tick(0.9);
     case 'wax_fed':
+    case 'offered':
       return SOUND.seal();
+    case 'door_answered':
+      return SOUND.page();
     case 'jale_mourned':
       return SOUND.heldNote();
   }
@@ -80,24 +83,34 @@ async function main(): Promise<void> {
   stage.append(toast);
   if (params.has('annotate')) annotate(stage);
 
+  let toastTimer = 0;
+  const say = (line: string) => {
+    toast.textContent = line;
+    toast.classList.add('show');
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => toast.classList.remove('show'), TUNING.toast_ms);
+  };
   let seen = wake.state().log.length;
   let clock = 0;
   const refresh = () => {
     const s = wake.state();
-    table.render(s);
-    s.log.slice(seen).forEach(sound);
+    const fresh = s.log.slice(seen);
     seen = s.log.length;
+    table.render(s);
+    fresh.forEach(sound);
+    // the dark door's answer, on a paper strip until the page arrives (step 5)
+    if (fresh.some((e) => e.event === 'door_answered')) say(LINES.deadLeave.ro);
     if (s.phase === 'ended') window.clearInterval(clock);
     document.body.dataset.day = String(s.day);
     document.body.dataset.phase = s.phase;
     document.body.dataset.wax = String(s.wax);
+    document.body.dataset.ending = s.ending ?? '';
   };
   const act = (a: Parameters<Wake['apply']>[0]) => {
     const answer = wake.apply(a, Date.now());
     if (answer.ok && answer.changed) refresh();
     return answer.ok;
   };
-  let toastTimer = 0;
   attachInput(stage, table, {
     probe: (ids: number[], target: Target) => wake.probe({ type: 'place', cards: ids, target }, Date.now()).ok,
     place: (ids: number[], target: Target) => act({ type: 'place', cards: ids, target }),
@@ -106,10 +119,7 @@ async function main(): Promise<void> {
     lifted: () => SOUND.tick(1.1),
     refused: () => {
       SOUND.tick(0.8);
-      toast.textContent = LINES.doesNotFit.ro;
-      toast.classList.add('show');
-      window.clearTimeout(toastTimer);
-      toastTimer = window.setTimeout(() => toast.classList.remove('show'), TUNING.toast_ms);
+      say(LINES.doesNotFit.ro);
     },
   });
   // the first touch opens the sound (iOS needs a gesture)

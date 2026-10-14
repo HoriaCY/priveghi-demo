@@ -76,7 +76,13 @@ export const SOUND = {
     const t = c.currentTime;
     noise(c, 0.09, 'bandpass', 500, 9, 0.5 * ui, t, 0.01).frequency.exponentialRampToValueAtTime(1400, t + 0.09);
   },
-  /** A wax seal pressed: wax fed to the candle. */
+  /** A page: soft paper noise with a slow envelope. The door's answer. */
+  page(): void {
+    const c = ctx;
+    if (!c) return;
+    noise(c, 0.16, 'lowpass', 2600, 0.7, 0.25 * ui, c.currentTime, 0.05);
+  },
+  /** A wax seal pressed: wax fed to the candle, coliva laid on the plank. */
   seal(): void {
     const c = ctx;
     if (!c) return;

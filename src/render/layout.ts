@@ -27,6 +27,8 @@ export const DOOR_X = nicheX(6);
 
 export const PLANK = { x: 76, y: 372, w: 124, h: 296 };
 export const ON_PLANK = { x: PLANK.x + 8, y: PLANK.y + 50 };
+/** Cel Nenuntit's memorial marks on the plank, below him: one small dish per soroc. */
+export const MARKS = { x: PLANK.x + 14, y: PLANK.y + 214, w: 44, gap: 8 };
 export const JALE = { x: 1096, y: 520 };
 
 interface Row { x: number; y: number; right: number; order: Kind[] }
