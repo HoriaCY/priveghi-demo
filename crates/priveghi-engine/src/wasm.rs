@@ -32,13 +32,23 @@ impl Engine {
         serde_json::to_string(&self.game.state).expect("a state serialises")
     }
 
+    /// What `apply` would answer for this action, without applying it.
+    pub fn probe(&self, action: &str, now_ms: f64) -> Result<String, JsError> {
+        let action: Action = serde_json::from_str(action).map_err(|e| JsError::new(&e.to_string()))?;
+        Ok(answer(self.game.probe(action, now_ms as u64)))
+    }
+
     /// Applies an action given as JSON. Answers `{"ok":true,"changed":…}` or `{"ok":false,"refusal":…}`.
     pub fn apply(&mut self, action: &str, now_ms: f64) -> Result<String, JsError> {
         let action: Action = serde_json::from_str(action).map_err(|e| JsError::new(&e.to_string()))?;
-        let answer = match self.game.apply(action, now_ms as u64) {
-            Ok(changed) => serde_json::json!({ "ok": true, "changed": changed }),
-            Err(refusal) => serde_json::json!({ "ok": false, "refusal": refusal }),
-        };
-        Ok(answer.to_string())
+        Ok(answer(self.game.apply(action, now_ms as u64)))
     }
+}
+
+fn answer(result: Result<bool, crate::Refusal>) -> String {
+    match result {
+        Ok(changed) => serde_json::json!({ "ok": true, "changed": changed }),
+        Err(refusal) => serde_json::json!({ "ok": false, "refusal": refusal }),
+    }
+    .to_string()
 }

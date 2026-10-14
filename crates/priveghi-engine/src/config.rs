@@ -23,6 +23,18 @@ pub struct Config {
     pub umbla_zile: u8,
     /// Dor sung for each lit pip and each Bocet card. Chapter §6.3, first threshold.
     pub dor_per_bocet: u32,
+    /// The table candle's wax at the start, and its whole height. Chapter §6.4 `kit_wax`; RULINGS R19.
+    pub kit_wax: u8,
+    /// The candle burns one notch at every close of a day divisible by this. Chapter §6.4 `ceara_zile`.
+    pub ceara_zile: u8,
+    /// The watcher's Vigoare pips; a dark close costs one. Chapter §6.4 `vigoare`.
+    pub vigoare: u8,
+    /// Dark closes forgiven before the first pip goes. Chapter §6.4 `wax_grace`.
+    pub wax_grace: u8,
+    /// Fir de dor the troita's sill can hold tied. Chapter §6.1 `sill`; brief §3.3.
+    pub sill: u8,
+    /// Jale that break the watcher (Frant). Chapter §6.2; brief §3.6.
+    pub jale_frant: u8,
 }
 
 impl Default for Config {
@@ -38,6 +50,12 @@ impl Default for Config {
             boci_jale_zile: 1,
             umbla_zile: 1,
             dor_per_bocet: 3,
+            kit_wax: 5,
+            ceara_zile: 3,
+            vigoare: 3,
+            wax_grace: 0,
+            sill: 3,
+            jale_frant: 3,
         }
     }
 }

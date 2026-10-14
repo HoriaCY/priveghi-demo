@@ -20,6 +20,11 @@ export class Wake {
     return JSON.parse(this.engine.apply(JSON.stringify(action), now)) as Answer;
   }
 
+  /** What apply would answer, without applying: lights a niche only if the engine would take the cards. */
+  probe(action: Action, now: number): Answer {
+    return JSON.parse(this.engine.probe(JSON.stringify(action), now)) as Answer;
+  }
+
   save(): string {
     return this.engine.save();
   }

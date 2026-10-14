@@ -21,7 +21,8 @@ const sh = (cmd, args) => {
 const BINARY = /\.(png|jpe?g|gif|webp|ico|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|wasm|psd|ai|blend|zip)$/i;
 const ASSET = /\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|psd|ai|blend)$/i;
 const STATIC = /\.(html|js|css|wasm|woff2|svg|png|ico|webmanifest|txt|json)$/i;
-const NOREPLY = /^(\d+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com$|^noreply@anthropic\.com$/i;
+// the account's noreply, Claude's co-author trailer, and GitHub's own committer on merges made there
+const NOREPLY = /^(\d+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com$|^noreply@anthropic\.com$|^noreply@github\.com$/i;
 
 const tracked = sh('git', ['ls-files', '--cached', '--others', '--exclude-standard']).split('\n').filter(Boolean);
 const walk = (dir) =>

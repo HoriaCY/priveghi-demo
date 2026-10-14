@@ -10,6 +10,7 @@ use crate::rng::Rng;
 
 /// The table when the wake begins.
 pub fn new_state(config: Config, now_ms: u64) -> State {
+    let (wax, vigoare) = (config.kit_wax, config.vigoare);
     let mut s = State {
         clock: Clock {
             day_ends_at: now_ms + config.zi_ms,
@@ -25,6 +26,11 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         wanders: BTreeMap::new(),
         sung: 0,
         bocete: 0,
+        wax,
+        vigoare,
+        dark: 0,
+        frant: false,
+        ending: None,
         next_id: 1,
         rev: 0,
         log: Vec::new(),
@@ -62,7 +68,7 @@ pub fn step(state: &State, action: Action, now_ms: u64, rng: &mut Rng) -> Result
         Action::Pause => pause(&mut s, now_ms),
         Action::Resume => resume(&mut s, now_ms),
         Action::Place { cards, target } => {
-            place(&mut s, &cards, target)?;
+            place(&mut s, &cards, target, now_ms)?;
             true
         }
         Action::Unplace { cards } => {
@@ -110,8 +116,13 @@ fn tap_flame(s: &mut State, now: u64) -> Result<bool, Refusal> {
     if s.clock.paused_left.is_some() {
         return Err(Refusal::NotNow);
     }
+    Ok(begin_close(s, now))
+}
+
+/// The day closes one pre-cue from now: the flame gutters with its dry tick first.
+fn begin_close(s: &mut State, now: u64) -> bool {
     if s.clock.closing {
-        return Ok(false);
+        return false;
     }
     s.clock.closing = true;
     s.clock.day_ends_at = s.clock.day_ends_at.min(now + s.config.precue_ms);
@@ -119,7 +130,7 @@ fn tap_flame(s: &mut State, now: u64) -> Result<bool, Refusal> {
         s.clock.precued = true;
         log(s, Event::Precue);
     }
-    Ok(true)
+    true
 }
 
 fn pause(s: &mut State, now: u64) -> bool {
@@ -142,14 +153,18 @@ fn resume(s: &mut State, now: u64) -> bool {
 
 // ---------------------------------------------------------------- placing
 
-fn place(s: &mut State, ids: &[u32], target: Target) -> Result<(), Refusal> {
+fn place(s: &mut State, ids: &[u32], target: Target, now: u64) -> Result<(), Refusal> {
     awake(s)?;
     if ids.is_empty() {
         return Err(Refusal::Nothing);
     }
-    let Target::Niche(niche) = target;
-    if s.runs.contains_key(&niche) {
-        return Err(Refusal::Busy);
+    if let Target::Niche(niche) = target {
+        if s.runs.contains_key(&niche) {
+            return Err(Refusal::Busy);
+        }
+        if s.frant && LOCKED_BY_FRANT.contains(&niche) {
+            return Err(Refusal::Locked);
+        }
     }
     for &id in ids {
         let card = find(s, id)?;
@@ -159,6 +174,65 @@ fn place(s: &mut State, ids: &[u32], target: Target) -> Result<(), Refusal> {
             _ => {}
         }
     }
+    match target {
+        Target::Candle => feed_candle(s, ids),
+        Target::Niche(Niche::Troita) => troita(s, ids, now),
+        Target::Niche(niche) => into_niche(s, ids, niche),
+    }
+}
+
+/// Frant ties these shut; BOCESTE, GAZDUIESTE and the troita stay open (brief §3.6, RULINGS R22).
+const LOCKED_BY_FRANT: [Niche; 3] = [Niche::Umbla, Niche::Asculta, Niche::Descanta];
+
+/// A candle card in the dish adds a notch, until the candle is whole (RULINGS R19, R24).
+fn feed_candle(s: &mut State, ids: &[u32]) -> Result<(), Refusal> {
+    let mut fed = 0;
+    for &id in ids {
+        if kind_of(s, id) != Kind::Lumanare || s.wax >= s.config.kit_wax {
+            break;
+        }
+        remove(s, id);
+        s.wax += 1;
+        fed += 1;
+    }
+    if fed == 0 {
+        return Err(Refusal::DoesNotFit);
+    }
+    log(s, Event::WaxFed { wax: s.wax });
+    Ok(())
+}
+
+/// The flask rests the day; a Fir de dor is tied on the sill, safe from decay (brief §3.3).
+fn troita(s: &mut State, ids: &[u32], now: u64) -> Result<(), Refusal> {
+    match kind_of(s, ids[0]) {
+        Kind::Plosca => {
+            if s.clock.paused_left.is_some() {
+                return Err(Refusal::NotNow);
+            }
+            set_at(s, ids[0], Loc::Niche(Niche::Troita));
+            log(s, Event::Placed { cards: vec![ids[0]], target: Target::Niche(Niche::Troita) });
+            begin_close(s, now);
+            Ok(())
+        }
+        Kind::FirDeDor => {
+            let tied_now = s.cards.iter().filter(|c| c.at == Loc::Sill).count();
+            let room = usize::from(s.config.sill).saturating_sub(tied_now);
+            let tied: Vec<u32> =
+                ids.iter().copied().filter(|id| kind_of(s, *id) == Kind::FirDeDor).take(room).collect();
+            if tied.is_empty() {
+                return Err(Refusal::DoesNotFit);
+            }
+            for id in &tied {
+                set_at(s, *id, Loc::Sill);
+            }
+            log(s, Event::Tied { cards: tied });
+            Ok(())
+        }
+        _ => Err(Refusal::DoesNotFit),
+    }
+}
+
+fn into_niche(s: &mut State, ids: &[u32], niche: Niche) -> Result<(), Refusal> {
     let mut inside: Vec<Kind> = s
         .cards
         .iter()
@@ -180,7 +254,7 @@ fn place(s: &mut State, ids: &[u32], target: Target) -> Result<(), Refusal> {
     for c in s.cards.iter_mut().filter(|c| accepted.contains(&c.id)) {
         c.at = Loc::Niche(niche);
     }
-    log(s, Event::Placed { cards: accepted, target });
+    log(s, Event::Placed { cards: accepted, target: Target::Niche(niche) });
     Ok(())
 }
 
@@ -188,11 +262,10 @@ fn unplace(s: &mut State, ids: &[u32]) -> Result<(), Refusal> {
     awake(s)?;
     let mut moved = Vec::new();
     for &id in ids {
-        if let Loc::Niche(n) = find(s, id)?.at {
-            if s.runs.contains_key(&n) {
-                return Err(Refusal::Busy);
-            }
-            moved.push(id);
+        match find(s, id)?.at {
+            Loc::Niche(n) if s.runs.contains_key(&n) => return Err(Refusal::Busy),
+            Loc::Niche(_) | Loc::Sill => moved.push(id),
+            _ => {}
         }
     }
     if moved.is_empty() {
@@ -264,9 +337,13 @@ fn close_day(s: &mut State, now: u64, early: bool, rng: &mut Rng) {
     commit(s);
     decay(s);
     resolve(s, rng);
-    if s.day >= s.config.zile {
+    drain_wax(s);
+    check_frant(s);
+    // the last Vigoare pip, or the ninth close: the Bride comes (brief §3.7; RULINGS R25)
+    if s.vigoare == 0 || s.day >= s.config.zile {
         s.phase = Phase::Ended;
-        log(s, Event::Ended);
+        s.ending = Some(Ending::Cununie);
+        log(s, Event::Ended { ending: Ending::Cununie });
         return;
     }
     s.day += 1;
@@ -282,8 +359,15 @@ fn close_day(s: &mut State, now: u64, early: bool, rng: &mut Rng) {
 
 /// Niches holding cards start their verb; a niche that cannot start gives its cards back.
 fn commit(s: &mut State) {
+    let flask = ids_at(s, Niche::Troita);
+    if !flask.is_empty() {
+        for id in flask {
+            set_at(s, id, Loc::Table);
+        }
+        log(s, Event::Rested);
+    }
     for niche in Niche::ORDER {
-        if s.runs.contains_key(&niche) {
+        if niche == Niche::Troita || s.runs.contains_key(&niche) {
             continue;
         }
         let ids = ids_at(s, niche);
@@ -342,6 +426,37 @@ fn resolve(s: &mut State, rng: &mut Rng) {
             Recipe::MournDor { n } => mourn_dor(s, niche, n),
             Recipe::MournJale => mourn_jale(s, niche),
         }
+    }
+}
+
+/// One notch burns at every `ceara_zile`-th close. With no wax the light is out: every close in the
+/// dark, the close that burns the last notch included, costs a Vigoare pip after the grace (chapter §6.4).
+fn drain_wax(s: &mut State) {
+    if s.config.ceara_zile > 0 && s.day.is_multiple_of(s.config.ceara_zile) && s.wax > 0 {
+        s.wax -= 1;
+        log(s, Event::WaxBurned { wax: s.wax });
+    }
+    if s.wax > 0 {
+        s.dark = 0;
+        return;
+    }
+    s.dark = s.dark.saturating_add(1);
+    if s.dark > s.config.wax_grace {
+        s.vigoare = s.vigoare.saturating_sub(1);
+    }
+    log(s, Event::DarkClose { vigoare: s.vigoare });
+}
+
+/// Three Jale break the watcher; mourning them mends it at the close it happens (chapter §6.2).
+fn check_frant(s: &mut State) {
+    let jale = s.cards.iter().filter(|c| c.kind == Kind::Jale).count();
+    let broken = jale >= usize::from(s.config.jale_frant);
+    if broken && !s.frant {
+        s.frant = true;
+        log(s, Event::FrantLocked);
+    } else if !broken && s.frant {
+        s.frant = false;
+        log(s, Event::FrantLifted);
     }
 }
 

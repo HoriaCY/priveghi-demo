@@ -4,12 +4,16 @@ A nine-day wake kept at a card table, in the browser. The rules engine is Rust c
 WebAssembly (`crates/priveghi-engine`); the renderer is TypeScript built with Vite. Static files
 only: no server.
 
-**Status: step 2 of 6.** The rules engine runs the day clock, Fir de dor decaying to Jale,
-Umblă and Bocește. The table is drawn from the engine's state with the prototype's components;
-it takes no input yet. Open design calls are listed in [RULINGS.md](RULINGS.md); screenshots of
-each step are in [docs/shots](docs/shots).
+**Status: step 3 of 6: playable.** Drag cards into the niches and the candle's dish; the day
+closes when its time runs out or when you tap the flame; rest at the troiță with the flask, or tie
+Fir de dor on its sill; the candle burns a notch every third day; three Jale break you (Frânt)
+and tie three niches shut until Rada mourns them. Nine days end with the Bride's wreath on the far
+seat (the ending's full beats come in step 5). Ascultă, Descântă, Găzduiește, the peddler, colivă
+and the offering come in step 4. Open design calls are listed in [RULINGS.md](RULINGS.md);
+screenshots of each step are in [docs/shots](docs/shots).
 
-`?fixture=wake` shows a table in the middle of the wake; `?typetest` shows the diacritics test.
+`?fixture=wake` shows a table in the middle of the wake, `?fixture=frant` a broken watcher;
+`?still` stops the clock; `?typetest` shows the diacritics test; `?sheet` shows every card face.
 
 ## What is on the table
 
@@ -32,6 +36,7 @@ The numbers match [docs/shots/step-2/annotated-1280x720.png](docs/shots/step-2/a
 8. **The cloth**: Rada, the peddler, Fir de dor (three grains, one falls each day; at none it
    turns to Jale), the lullaby, names, laments, colivă.
 9. **LUMÂNARE**, the table candle: its height is the wax left; a candle card goes in its dish.
+   Tap its flame to close the day. The three wax drops under it are Vigoare.
 10. **Bread and salt.**
 11. **Jale's corner**: grief from threads nobody mourned. Three Jale break the watcher (Frânt)
     and the niches lock until it is mourned.

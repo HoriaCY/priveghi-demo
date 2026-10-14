@@ -5,8 +5,19 @@ import type { Kind } from '../engine';
 
 export const STAGE = { w: 1280, h: 720 };
 export const CARD = { w: 108, h: 151 };
-/** The one large light. */
-export const FLAME = { x: 1030, y: 420 };
+/** The table candle's box; its SVG (24x80) is fitted to the width and centred, as in the prototype. */
+export const CANDLE = { x: 1010, y: 410, w: 40, h: 150 };
+/** Where a dropped card reaches the candle: the candle, its dish and its label. */
+export const CANDLE_BOX = { x: 985, y: 400, w: 90, h: 175 };
+
+/** The one large light: the candle's flame, lower as the wax burns (candleSVG's geometry). */
+export function flameAt(frac: number): { x: number; y: number } {
+  const k = CANDLE.w / 24;
+  const dy = (CANDLE.h - 80 * k) / 2;
+  const top = 70 - Math.max(4, 60 * frac);
+  return { x: CANDLE.x + 12 * k, y: CANDLE.y + dy + (top - 7) * k };
+}
+export const FLAME = flameAt(1);
 
 export const NICHE = { w: 150, h: 236, gap: 18, top: 118 };
 const DOOR_W = 60;

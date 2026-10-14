@@ -1,116 +1,11 @@
 //! Rules of the wake, step 1: the day clock, Dor decay, UMBLA, BOCESTE, determinism, saves.
 //! Tests pin their own numbers (`cfg`), so they test the mechanics, not today's defaults.
 
+mod common;
+
+use common::*;
 use priveghi_engine::*;
 use serde_json::Value;
-
-const T0: u64 = 1_000_000;
-
-fn cfg() -> Config {
-    Config {
-        zi_ms: 60_000,
-        precue_ms: 400,
-        zile: 9,
-        dor_zile: 3,
-        boci_min: 3,
-        boci_max: 6,
-        boci_dor_zile: 2,
-        boci_jale_zile: 1,
-        umbla_zile: 1,
-        dor_per_bocet: 3,
-    }
-}
-
-/// Room for more wanders than a nine-day wake allows.
-fn cfg_long() -> Config {
-    Config { zile: 30, ..cfg() }
-}
-
-fn game() -> Game {
-    Game::with_config(cfg(), 7, T0)
-}
-
-fn on_table(g: &Game, kind: Kind) -> Vec<u32> {
-    g.state.cards.iter().filter(|c| c.kind == kind && c.at == Loc::Table).map(|c| c.id).collect()
-}
-
-fn count(g: &Game, kind: Kind) -> usize {
-    g.state.cards.iter().filter(|c| c.kind == kind).count()
-}
-
-fn in_niche(g: &Game, niche: Niche) -> Vec<Kind> {
-    let mut v: Vec<Kind> =
-        g.state.cards.iter().filter(|c| c.at == Loc::Niche(niche)).map(|c| c.kind).collect();
-    v.sort();
-    v
-}
-
-fn niche_ids(g: &Game, niche: Niche) -> Vec<u32> {
-    g.state.cards.iter().filter(|c| c.at == Loc::Niche(niche)).map(|c| c.id).collect()
-}
-
-fn sorted(mut v: Vec<Kind>) -> Vec<Kind> {
-    v.sort();
-    v
-}
-
-fn dor_grains(g: &Game) -> Vec<u8> {
-    let mut v: Vec<u8> = g
-        .state
-        .cards
-        .iter()
-        .filter(|c| c.kind == Kind::FirDeDor && c.at == Loc::Table)
-        .map(|c| c.grains)
-        .collect();
-    v.sort();
-    v
-}
-
-fn place(g: &mut Game, kind: Kind, n: usize, niche: Niche) -> Result<bool, Refusal> {
-    let cards: Vec<u32> = on_table(g, kind).into_iter().take(n).collect();
-    g.apply(Action::Place { cards, target: Target::Niche(niche) }, T0)
-}
-
-fn close(g: &mut Game) {
-    g.apply(Action::CloseDay, T0).unwrap();
-}
-
-fn event_name(e: &Event) -> String {
-    serde_json::to_value(e).unwrap()["event"].as_str().unwrap().to_string()
-}
-
-/// Events logged since the last close began.
-fn last_close(g: &Game) -> Vec<Event> {
-    let at = g
-        .state
-        .log
-        .iter()
-        .rposition(|e| matches!(e.event, Event::DayClosed { .. }))
-        .expect("a close happened");
-    g.state.log[at..].iter().map(|e| e.event.clone()).collect()
-}
-
-fn precues(g: &Game) -> usize {
-    g.state.log.iter().filter(|e| e.event == Event::Precue).count()
-}
-
-/// Codrii Vlasiei into UMBLA (with a candle if `lit`), the day closes; returns what arrived.
-fn wander(g: &mut Game, lit: bool) -> Vec<Kind> {
-    place(g, Kind::CodriiVlasiei, 1, Niche::Umbla).unwrap();
-    if lit {
-        place(g, Kind::Lumanare, 1, Niche::Umbla).unwrap();
-    }
-    close(g);
-    let mut got: Vec<Kind> = last_close(g)
-        .into_iter()
-        .filter_map(|e| match e {
-            Event::Arrived { kind, .. } => Some(kind),
-            _ => None,
-        })
-        .collect();
-    got.sort();
-    got
-}
 
 // ---------------------------------------------------------------- the day clock
 

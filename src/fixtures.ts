@@ -3,7 +3,7 @@
 import type { Kind, Niche, Wake } from './engine';
 
 export function applyFixture(wake: Wake, name: string): void {
-  if (name !== 'wake') return;
+  if (name !== 'wake' && name !== 'frant') return;
   const now = () => Date.now();
   const onTable = (k: Kind) => wake.state().cards.filter((c) => c.kind === k && c.at === 'table');
   const place = (cards: number[], niche: Niche) => {
@@ -13,6 +13,13 @@ export function applyFixture(wake: Wake, name: string): void {
   const close = () => wake.apply({ type: 'close_day' }, now());
   const codrii = () => onTable('codrii_vlasiei').map((c) => c.id);
 
+  if (name === 'frant') {
+    // a lit wander on day 1, then nobody mourns: three threads rot at the fourth close and break the watcher
+    place(codrii(), 'umbla');
+    place(onTable('lumanare').slice(0, 1).map((c) => c.id), 'umbla');
+    for (let i = 0; i < 4; i++) close();
+    return;
+  }
   // days 1-3: three wanders, the first by the light of a candle
   place(codrii(), 'umbla');
   place(onTable('lumanare').slice(0, 1).map((c) => c.id), 'umbla');
