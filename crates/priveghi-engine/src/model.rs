@@ -90,6 +90,9 @@ pub struct Card {
     pub grains: u8,
     /// The day it arrived. Nothing counts down at the close of the day it arrived (chapter §3).
     pub born: u8,
+    /// Full days left for a card that does not stay: a guest, coliva, a blessing. Zero: it stays.
+    #[serde(default)]
+    pub days: u8,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -98,6 +101,8 @@ pub enum Target {
     Niche(Niche),
     /// The table candle's clay dish.
     Candle,
+    /// Cel Nenuntit on his plank: coliva laid on him on his days keeps his mark.
+    Nenuntit,
 }
 
 /// What a niche was committed to at the close that started it. Sealed until it resolves.
@@ -107,6 +112,10 @@ pub enum Recipe {
     Wander { place: Kind, lit: bool },
     MournDor { n: u8 },
     MournJale,
+    Listen,
+    Charm,
+    Trade { pay: Kind },
+    Hearth,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -217,6 +226,30 @@ pub enum Event {
     Ended {
         ending: Ending,
     },
+    /// The dark door answered a name spoken at it.
+    DoorAnswered,
+    // fields are named `soroc`, not `day`: a log entry already carries its day, flattened beside them
+    Offered {
+        soroc: u8,
+    },
+    MarkHeld {
+        soroc: u8,
+    },
+    MarkMissed {
+        soroc: u8,
+    },
+    /// A guest went on, a coliva spoiled, a blessing faded.
+    Left {
+        card: u32,
+        kind: Kind,
+    },
+}
+
+/// One of Cel Nenuntit's memorial days, kept or not.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Mark {
+    pub day: u8,
+    pub held: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -247,6 +280,9 @@ pub struct State {
     pub dark: u8,
     /// Broken by grief: three niches lock until the Jale is mourned.
     pub frant: bool,
+    /// Days on which coliva was laid on Cel Nenuntit.
+    pub offered: Vec<u8>,
+    pub marks: Vec<Mark>,
     pub ending: Option<Ending>,
     pub next_id: u32,
     /// Bumped on every change, so a renderer can skip frames where nothing happened.

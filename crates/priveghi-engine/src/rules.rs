@@ -30,6 +30,8 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         vigoare,
         dark: 0,
         frant: false,
+        offered: Vec::new(),
+        marks: Vec::new(),
         ending: None,
         next_id: 1,
         rev: 0,
@@ -175,6 +177,7 @@ fn place(s: &mut State, ids: &[u32], target: Target, now: u64) -> Result<(), Ref
         }
     }
     match target {
+        Target::Nenuntit => offer(s, ids),
         Target::Candle => feed_candle(s, ids),
         Target::Niche(Niche::Troita) => troita(s, ids, now),
         Target::Niche(niche) => into_niche(s, ids, niche),
@@ -295,7 +298,21 @@ fn fits(niche: Niche, inside: &[Kind], kind: Kind, cfg: &Config) -> bool {
             Kind::Jale => !has(Kind::FirDeDor) && !has(Kind::Jale),
             _ => false,
         },
-        _ => false,
+        // a lullaby (brief §3.3)
+        Niche::Asculta => kind == Kind::CantecDeLeagan && inside.is_empty(),
+        // a name, spoken at the dark door (brief §3.3)
+        Niche::Descanta => kind == Kind::Nume && inside.is_empty(),
+        // the peddler and one payment (bog iron or a thread), or wheat with no guest (brief §3.3)
+        Niche::Gazdui => {
+            let paid = has(Kind::Fier) || has(Kind::FirDeDor);
+            match kind {
+                Kind::Negustor => !has(Kind::Negustor) && !has(Kind::Grau),
+                Kind::Fier | Kind::FirDeDor => !paid && !has(Kind::Grau),
+                Kind::Grau => inside.is_empty(),
+                _ => false,
+            }
+        }
+        Niche::Troita => false,
     }
 }
 
@@ -317,7 +334,16 @@ fn recipe_of(niche: Niche, inside: &[Kind], cfg: &Config) -> Option<Recipe> {
                 .contains(&dor)
                 .then_some(Recipe::MournDor { n: dor as u8 })
         }
-        _ => None,
+        Niche::Asculta => (inside == [Kind::CantecDeLeagan]).then_some(Recipe::Listen),
+        Niche::Descanta => (inside == [Kind::Nume]).then_some(Recipe::Charm),
+        Niche::Gazdui => {
+            if inside == [Kind::Grau] {
+                return Some(Recipe::Hearth);
+            }
+            let pay = *inside.iter().find(|k| matches!(k, Kind::Fier | Kind::FirDeDor))?;
+            (inside.len() == 2 && inside.contains(&Kind::Negustor)).then_some(Recipe::Trade { pay })
+        }
+        Niche::Troita => None,
     }
 }
 
@@ -326,6 +352,9 @@ fn duration(recipe: Recipe, cfg: &Config) -> u8 {
         Recipe::Wander { .. } => cfg.umbla_zile,
         Recipe::MournDor { .. } => cfg.boci_dor_zile,
         Recipe::MournJale => cfg.boci_jale_zile,
+        Recipe::Listen => cfg.asculta_zile,
+        Recipe::Charm => 1,
+        Recipe::Trade { .. } | Recipe::Hearth => cfg.gazdui_zile,
     };
     days.max(1)
 }
@@ -337,13 +366,19 @@ fn close_day(s: &mut State, now: u64, early: bool, rng: &mut Rng) {
     commit(s);
     decay(s);
     resolve(s, rng);
+    lifetimes(s);
+    peddler_returns(s);
     drain_wax(s);
+    check_marks(s);
     check_frant(s);
-    // the last Vigoare pip, or the ninth close: the Bride comes (brief §3.7; RULINGS R25)
+    // the last Vigoare pip, or the ninth close (brief §3.7; RULINGS R25)
     if s.vigoare == 0 || s.day >= s.config.zile {
+        let kept = s.vigoare > 0
+            && s.config.soroace.iter().filter(|d| **d <= s.config.zile).all(|d| s.offered.contains(d));
+        let ending = if kept { Ending::Pomelnic } else { Ending::Cununie };
         s.phase = Phase::Ended;
-        s.ending = Some(Ending::Cununie);
-        log(s, Event::Ended { ending: Ending::Cununie });
+        s.ending = Some(ending);
+        log(s, Event::Ended { ending });
         return;
     }
     s.day += 1;
@@ -425,6 +460,17 @@ fn resolve(s: &mut State, rng: &mut Rng) {
             Recipe::Wander { place, lit } => wander(s, niche, place, lit, rng),
             Recipe::MournDor { n } => mourn_dor(s, niche, n),
             Recipe::MournJale => mourn_jale(s, niche),
+            Recipe::Listen => exchange(s, niche, &[Kind::CantecDeLeagan], Kind::Nume, 0),
+            Recipe::Charm => {
+                log(s, Event::DoorAnswered);
+                let days = s.config.binecuvantare_zile;
+                exchange(s, niche, &[], Kind::Binecuvantare, days);
+            }
+            Recipe::Trade { pay } => exchange(s, niche, &[pay], Kind::Grau, 0),
+            Recipe::Hearth => {
+                let days = s.config.coliva_zile;
+                exchange(s, niche, &[Kind::Grau], Kind::Coliva, days);
+            }
         }
     }
 }
@@ -479,10 +525,95 @@ fn wander(s: &mut State, niche: Niche, place: Kind, lit: bool, rng: &mut Rng) {
     if lit {
         draws.push(Kind::FirDeDor);
     }
+    // a blessing on the table: this wander draws one more, and the blessing is spent (brief §3.5)
+    if let Some(b) = s.cards.iter().find(|c| c.kind == Kind::Binecuvantare).map(|c| c.id) {
+        remove(s, b);
+        log(s, Event::Consumed { card: b, kind: Kind::Binecuvantare });
+        draws.push(Kind::FirDeDor);
+    }
     for kind in draws {
+        if kind == Kind::Negustor {
+            arrive_peddler(s);
+            continue;
+        }
         let card = add(s, kind, Loc::Table);
         log(s, Event::Arrived { card, kind });
     }
+}
+
+fn arrive_peddler(s: &mut State) {
+    if s.cards.iter().any(|c| c.kind == Kind::Negustor) {
+        return;
+    }
+    let card = add(s, Kind::Negustor, Loc::Table);
+    let stay = s.config.peddler_stay_zile;
+    set_days(s, card, stay);
+    log(s, Event::Arrived { card, kind: Kind::Negustor });
+}
+
+/// He comes back on his day if he is not at the table (RULINGS R20).
+fn peddler_returns(s: &mut State) {
+    if s.day + 1 == s.config.peddler_return_day {
+        arrive_peddler(s);
+    }
+}
+
+/// A niche's verb resolves: the consumed kinds go, everything else returns to the cloth, and one
+/// card of `made` arrives (lasting `days` full days, or staying when zero).
+fn exchange(s: &mut State, niche: Niche, consumed: &[Kind], made: Kind, days: u8) {
+    for id in ids_at(s, niche) {
+        let kind = kind_of(s, id);
+        if consumed.contains(&kind) {
+            remove(s, id);
+            log(s, Event::Consumed { card: id, kind });
+        } else {
+            set_at(s, id, Loc::Table);
+        }
+    }
+    let card = add(s, made, Loc::Table);
+    set_days(s, card, days);
+    log(s, Event::Arrived { card, kind: made });
+}
+
+/// Cards that do not stay count down at every close after the one they arrived at: a guest goes
+/// on, a coliva spoils, a blessing fades (chapter §3's lifetime rule).
+fn lifetimes(s: &mut State) {
+    let day = s.day;
+    let mut gone = Vec::new();
+    for c in s.cards.iter_mut().filter(|c| c.days > 0 && c.born < day) {
+        c.days -= 1;
+        if c.days == 0 {
+            gone.push((c.id, c.kind));
+        }
+    }
+    for (card, kind) in gone {
+        remove(s, card);
+        log(s, Event::Left { card, kind });
+    }
+}
+
+/// On Cel Nenuntit's days, coliva laid on him keeps his mark; otherwise the day passes unkept.
+fn check_marks(s: &mut State) {
+    let day = s.day;
+    if !s.config.soroace.contains(&day) {
+        return;
+    }
+    let held = s.offered.contains(&day);
+    s.marks.push(Mark { day, held });
+    log(s, if held { Event::MarkHeld { soroc: day } } else { Event::MarkMissed { soroc: day } });
+}
+
+/// Coliva on Cel Nenuntit, on one of his days, once: the pomana (brief §3.3). Open under Frant.
+fn offer(s: &mut State, ids: &[u32]) -> Result<(), Refusal> {
+    let day = s.day;
+    let id = ids[0];
+    if kind_of(s, id) != Kind::Coliva || !s.config.soroace.contains(&day) || s.offered.contains(&day) {
+        return Err(Refusal::DoesNotFit);
+    }
+    remove(s, id);
+    s.offered.push(day);
+    log(s, Event::Offered { soroc: day });
+    Ok(())
 }
 
 /// The place's pool, a sequence by wander count (brief §3.5).
@@ -547,7 +678,7 @@ fn add(s: &mut State, kind: Kind, at: Loc) -> u32 {
     let id = s.next_id;
     s.next_id += 1;
     let grains = if kind == Kind::FirDeDor { s.config.dor_zile } else { 0 };
-    s.cards.push(Card { id, kind, at, grains, born: s.day });
+    s.cards.push(Card { id, kind, at, grains, born: s.day, days: 0 });
     id
 }
 
@@ -561,6 +692,12 @@ fn find(s: &State, id: u32) -> Result<&Card, Refusal> {
 
 fn kind_of(s: &State, id: u32) -> Kind {
     s.cards.iter().find(|c| c.id == id).map(|c| c.kind).expect("a card on the table")
+}
+
+fn set_days(s: &mut State, id: u32, days: u8) {
+    if let Some(c) = s.cards.iter_mut().find(|c| c.id == id) {
+        c.days = days;
+    }
 }
 
 fn set_at(s: &mut State, id: u32, at: Loc) {

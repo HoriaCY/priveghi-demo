@@ -11,14 +11,18 @@ export type Niche = 'troita' | 'umbla' | 'asculta' | 'descanta' | 'boci' | 'gazd
 
 export type Loc = 'table' | 'plank' | 'sill' | { niche: Niche };
 
-export interface Card { id: number; kind: Kind; at: Loc; grains: number; born: number }
+export interface Card { id: number; kind: Kind; at: Loc; grains: number; born: number; days: number }
 
-export type Target = { niche: Niche } | 'candle';
+export type Target = { niche: Niche } | 'candle' | 'nenuntit';
 
 export type Recipe =
   | { recipe: 'wander'; place: Kind; lit: boolean }
   | { recipe: 'mourn_dor'; n: number }
-  | { recipe: 'mourn_jale' };
+  | { recipe: 'mourn_jale' }
+  | { recipe: 'listen' }
+  | { recipe: 'charm' }
+  | { recipe: 'trade'; pay: Kind }
+  | { recipe: 'hearth' };
 
 export interface Run { recipe: Recipe; days: number; days_left: number; started: number }
 
@@ -50,7 +54,14 @@ export type Event =
   | { event: 'dark_close'; vigoare: number }
   | { event: 'frant_locked' }
   | { event: 'frant_lifted' }
-  | { event: 'ended'; ending: Ending };
+  | { event: 'ended'; ending: Ending }
+  | { event: 'door_answered' }
+  | { event: 'offered'; soroc: number }
+  | { event: 'mark_held'; soroc: number }
+  | { event: 'mark_missed'; soroc: number }
+  | { event: 'left'; card: number; kind: Kind };
+
+export interface Mark { day: number; held: boolean }
 
 export type Entry = Event & { day: number };
 
@@ -59,6 +70,8 @@ export interface Config {
   boci_min: number; boci_max: number; boci_dor_zile: number; boci_jale_zile: number;
   umbla_zile: number; dor_per_bocet: number;
   kit_wax: number; ceara_zile: number; vigoare: number; wax_grace: number; sill: number; jale_frant: number;
+  asculta_zile: number; gazdui_zile: number; coliva_zile: number; soroace: number[];
+  peddler_stay_zile: number; peddler_return_day: number; binecuvantare_zile: number;
 }
 
 export interface State {
@@ -75,6 +88,8 @@ export interface State {
   vigoare: number;
   dark: number;
   frant: boolean;
+  offered: number[];
+  marks: Mark[];
   ending: Ending | null;
   next_id: number;
   rev: number;

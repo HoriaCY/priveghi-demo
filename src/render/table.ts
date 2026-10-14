@@ -4,8 +4,8 @@ import type { Card, Kind, Niche, Run, State, Target } from '../engine';
 import { CANDLE, CARD as NAMES, CUNUNIE, DAYS, NICHE as LABELS } from '../strings';
 import { cardBackSVG, cardSVG } from './card';
 import { LOOK } from './catalog';
-import { candleSVG, cordSVG, darkDoorSVG, dishSVG, grainRowSVG, nicheSVG, pipsSVG, plankSVG, stillLifeSVG, type Mark } from './furniture';
-import { CANDLE_BOX, DOOR_X, JALE, NICHE, ON_PLANK, PLANK, ROW_CLOTH, ROW_KIT, flameAt, nicheX, rowSlots, shadowFor } from './layout';
+import { candleSVG, cordSVG, darkDoorSVG, dishSVG, grainRowSVG, markSVG, nicheSVG, pipsSVG, plankSVG, stillLifeSVG, type Mark } from './furniture';
+import { CANDLE_BOX, DOOR_X, JALE, MARKS, NICHE, ON_PLANK, PLANK, ROW_CLOTH, ROW_KIT, flameAt, nicheX, rowSlots, shadowFor } from './layout';
 import { M } from './motifs';
 import { C } from './palette';
 
@@ -19,7 +19,7 @@ const NICHES: { id: Niche; mark?: Mark; roof?: boolean; thread?: boolean; icon?:
 ];
 
 /** The card a niche shows as its heart; the rest sit beside it as one small stack. */
-const HEART: Partial<Record<Niche, Kind[]>> = { boci: ['rada'], umbla: ['codrii_vlasiei'] };
+const HEART: Partial<Record<Niche, Kind[]>> = { boci: ['rada'], umbla: ['codrii_vlasiei'], gazdui: ['negustor', 'grau'] };
 
 /** Where a niche seats its cards: the heart in the cardseat, the rest in its corner. */
 const SEAT = { x: 21, y: 40 };
@@ -56,6 +56,7 @@ export class Table {
   private readonly sill: HTMLElement[] = [];
   private readonly dayTag: HTMLElement;
   private readonly wreath: HTMLElement;
+  private readonly marks: HTMLElement;
   /** The flame's tap target (44 CSS px or more at the phone's scale). */
   readonly flame: HTMLElement;
   private candleSig = '';
@@ -75,7 +76,9 @@ export class Table {
     stage.append(cloth);
     const plank = el('plank', plankSVG());
     at(plank, PLANK.x, PLANK.y);
-    stage.append(plank);
+    this.marks = el('marks');
+    at(this.marks, MARKS.x, MARKS.y);
+    stage.append(plank, this.marks);
 
     NICHES.forEach((n, i) => {
       const v = el('verb');
@@ -143,6 +146,7 @@ export class Table {
     this.renderSill(s.cards.filter((c) => c.at === 'sill'));
     this.renderCandle(s);
     this.dayTag.textContent = DAYS[Math.min(s.day, DAYS.length) - 1].ro;
+    this.renderMarks(s);
     this.wreath.hidden = !(s.phase === 'ended' && s.ending === 'cununie');
   }
 
@@ -154,12 +158,15 @@ export class Table {
     }
     const b = CANDLE_BOX;
     if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return 'candle';
+    if (x >= PLANK.x && x <= PLANK.x + PLANK.w && y >= PLANK.y && y <= PLANK.y + PLANK.h) return 'nenuntit';
     return null;
   }
 
   /** The element that answers for a target by contour weight while a card hovers over it. */
   targetEl(t: Target): HTMLElement {
-    return t === 'candle' ? this.dish : this.niches.get(t.niche)!.el;
+    if (t === 'candle') return this.dish;
+    if (t === 'nenuntit') return this.marks;
+    return this.niches.get(t.niche)!.el;
   }
 
   private renderStacks(s: State): void {
@@ -248,6 +255,21 @@ export class Table {
     v.taper.innerHTML = run ? candleSVG(run.days_left / run.days) : '';
     v.el.classList.toggle('working', Boolean(run));
     v.el.dataset.cards = inside.map((c) => c.id).join(' ');
+  }
+
+  /** Cel Nenuntit's days: a dish per soroc, waiting, kept or missed. */
+  private renderMarks(s: State): void {
+    const sig = JSON.stringify(s.marks);
+    if (this.marks.dataset.sig === sig) return;
+    this.marks.dataset.sig = sig;
+    this.marks.innerHTML = s.config.soroace
+      .filter((d) => d <= s.config.zile)
+      .map((d) => {
+        const m = s.marks.find((x) => x.day === d);
+        const state = m ? (m.held ? 'held' : 'missed') : 'waiting';
+        return `<div class="mark" data-soroc="${d}" data-state="${state}" style="width:${MARKS.w}px">${markSVG(state)}</div>`;
+      })
+      .join('');
   }
 
   private renderSill(tied: Card[]): void {

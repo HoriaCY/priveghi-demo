@@ -24,13 +24,21 @@ pub fn cfg() -> Config {
         wax_grace: 0,
         sill: 3,
         jale_frant: 3,
+        asculta_zile: 1,
+        gazdui_zile: 1,
+        coliva_zile: 4,
+        soroace: vec![3, 9],
+        peddler_stay_zile: 2,
+        peddler_return_day: 7,
+        binecuvantare_zile: 1,
     }
 }
 
 /// Room for more wanders than a nine-day wake allows. These runs never mourn, so their grief would
-/// break the watcher and their candle would go out; they test the draws, so neither may happen.
+/// break the watcher and their candle would go out; they test the draws, so neither may happen, and
+/// the peddler's return stays out of a wander's arrivals.
 pub fn cfg_long() -> Config {
-    Config { zile: 30, jale_frant: u8::MAX, kit_wax: u8::MAX, ..cfg() }
+    Config { zile: 30, jale_frant: u8::MAX, kit_wax: u8::MAX, peddler_return_day: 0, ..cfg() }
 }
 
 pub fn game() -> Game {
@@ -130,4 +138,21 @@ pub fn sill_ids(g: &Game) -> Vec<u32> {
 
 pub fn sill(g: &Game) -> usize {
     sill_ids(g).len()
+}
+
+/// Coliva (or any card) onto Cel Nenuntit on his plank.
+pub fn offer(g: &mut Game) -> Result<bool, Refusal> {
+    place_on(g, Kind::Coliva, 1, Target::Nenuntit)
+}
+
+pub fn arrivals(g: &Game) -> Vec<Kind> {
+    let mut v: Vec<Kind> = last_close(g)
+        .into_iter()
+        .filter_map(|e| match e {
+            Event::Arrived { kind, .. } => Some(kind),
+            _ => None,
+        })
+        .collect();
+    v.sort();
+    v
 }

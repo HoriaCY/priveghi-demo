@@ -4,12 +4,12 @@ A nine-day wake kept at a card table, in the browser. The rules engine is Rust c
 WebAssembly (`crates/priveghi-engine`); the renderer is TypeScript built with Vite. Static files
 only: no server.
 
-**Status: step 3 of 6: playable.** Drag cards into the niches and the candle's dish; the day
-closes when its time runs out or when you tap the flame; rest at the troiță with the flask, or tie
-Fir de dor on its sill; the candle burns a notch every third day; three Jale break you (Frânt)
-and tie three niches shut until Rada mourns them. Nine days end with the Bride's wreath on the far
-seat (the ending's full beats come in step 5). Ascultă, Descântă, Găzduiește, the peddler, colivă
-and the offering come in step 4. Open design calls are listed in [RULINGS.md](RULINGS.md);
+**Status: step 4 of 6: the full loop.** Wander Codrii Vlăsiei for Fir de dor; have Rada mourn
+them before they rot to Jale; listen to the lullaby for a Nume and speak it at the dark door for
+a blessing; host the peddler for wheat; let the hearth make colivă and lay it on Cel Nenuntit on
+days 3 and 9. Keep both marks and the wake is kept; miss one and the Bride's wreath comes to the
+far seat. Rest at the troiță, feed the candle, and watch Frânt. The boot, the page, the ending's
+beats and saving come in step 5. Open design calls are listed in [RULINGS.md](RULINGS.md);
 screenshots of each step are in [docs/shots](docs/shots).
 
 `?fixture=wake` shows a table in the middle of the wake, `?fixture=frant` a broken watcher;
