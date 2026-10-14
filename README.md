@@ -1,21 +1,32 @@
 # Priveghi — demo
 
-A nine-day wake kept at a card table, in the browser. The rules engine is Rust compiled to
-WebAssembly (`crates/priveghi-engine`); the renderer is TypeScript built with Vite. Static files
-only: no server.
+A card table kept at a wake. For nine days you keep vigil beside one who died unwed, mourning
+threads of longing (*dor*) before they turn to grief (*jale*). A small game for the browser:
+landscape, phone first, also on tablets and desktops. Rules in Rust compiled to WebAssembly
+(`crates/priveghi-engine`); the table drawn in SVG by code (`src/`). Static files only.
 
-**Status: step 5 of 6: the whole wake.** A cold start is a dark frame: touch it, a match is
-struck, the troiță's flame catches, and the candle on its sill, carried into the troiță, becomes
-the table's candle as the light opens. Then the full loop: wander, mourn, listen, speak at the
-dark door, host the peddler, make colivă and lay it on Cel Nenuntit on days 3 and 9. Tap a card
-for its strip; tap again or hold for the page (beside or below the table on an iPad or desktop,
-over it on a phone). Day nine brings the ison: the Pomelnic if both marks were kept; otherwise
-the Bride's wreath, and „Nu încă.” begins another wake with one less wax. The wake is saved on
-this device; `?reset` clears it. Open design calls are listed in [RULINGS.md](RULINGS.md);
-screenshots of each step are in [docs/shots](docs/shots).
+**Play: https://horiacy.github.io/priveghi-demo/**
 
-`?fixture=wake` shows a table in the middle of the wake, `?fixture=frant` a broken watcher;
-`?still` stops the clock; `?typetest` shows the diacritics test; `?sheet` shows every card face.
+## On a phone
+
+1. Open the link in Safari, and turn the phone sideways.
+2. Touch the dark. A match is struck and the shrine's flame catches; carry the candle lying on
+   its sill into the shrine. The table opens.
+3. For full screen: Share → Add to Home Screen, then open Priveghi from its icon.
+
+The wake is saved in this browser only; add `?reset` to the link to begin again. `?seed=N`
+deals a different wake; the same seed plays the same beats.
+
+## How it plays (the game itself has no instructions)
+
+Drag cards into the niches; everything happens when the day closes, after 60 seconds or when
+you tap the candle's flame. Wander Codrii Vlăsiei (UMBLĂ) for threads of longing; each loses a
+grain a day and turns to grief, so give them to Rada (BOCEȘTE) in threes. Listen to the lullaby
+(ASCULTĂ) for a name and speak it at the dark door (DESCÂNTĂ) for a blessing. The peddler comes
+with the fourth wander; host him (GĂZDUIEȘTE) for wheat, and with no guest the hearth turns
+wheat into colivă. Lay colivă on Cel Nenuntit on days 3 and 9. Feed the candle; rest with the
+flask at the shrine (ÎNCHINĂ-TE); tie threads on its sill to keep them. Tap a card to read it;
+tap again for the page.
 
 ## What is on the table
 
@@ -43,20 +54,6 @@ The numbers match [docs/shots/step-2/annotated-1280x720.png](docs/shots/step-2/a
 11. **Jale's corner**: grief from threads nobody mourned. Three Jale break the watcher (Frânt)
     and the niches lock until it is mourned.
 
-## Build and test
-
-Needs Rust (stable) with the `wasm32-unknown-unknown` target, `wasm-pack`, and Node 22+.
-
-```sh
-cargo test                       # every rule of the wake
-npm install
-npm run build                    # wasm-pack + type-check + vite build into dist/
-npx playwright test              # the browser checks, against the built site
-npm run check                    # Romanian strings guard + the privacy checklist below
-```
-
-`?seed=N` changes the wake's draws; the same seed plays the same beats.
-
 ## Type
 
 Three self-hosted OFL faces: Cormorant Unicase (titles, card names), Alegreya (body) and
@@ -67,6 +64,32 @@ which every face must render with Ș and Ț carrying a comma (never a cedilla) a
 
 ## Privacy
 
-Static files only. No analytics, no cookies, no accounts, no requests to any other host; fonts
-are served from this site. Saves stay in this device's localStorage. `npm run check:privacy`
-checks the repository, the build and the commit history for all of it.
+Static files only, on GitHub Pages: no server, no accounts, no analytics, no cookies, and no
+requests to any other site (the fonts are served from here). The wake is saved only in this
+device's localStorage. `npm run check` verifies all of it on every build, along with the commit
+history. Credits and the font licences: [credits](https://horiacy.github.io/priveghi-demo/credits.html)
+and [CREDITS.md](CREDITS.md).
+
+## Build and test
+
+Needs Rust (stable) with the `wasm32-unknown-unknown` target, `wasm-pack`, and Node 24.
+
+```sh
+cargo test                       # every rule of the wake
+npm install
+npm run build                    # wasm-pack + type-check + vite build into dist/
+npx playwright test              # the browser checks, against the built site
+npm run check                    # Romanian strings, the palette law, the privacy checklist
+```
+
+Every push to `main` runs all of it in GitHub Actions and deploys `dist/` to Pages.
+Review views: `?fixture=start|wake|frant|broken`, `?still` (the clock stops), `?annotate`,
+`?typetest`, `?sheet` (every card face), `?icon`.
+
+## Design
+
+The rules and their numbers come from the demo brief and the systems chapter; every judgment
+call made while building is in [RULINGS.md](RULINGS.md), each with its source. Every Romanian
+string is a draft for review and lives in `src/strings.ts`. The card pictures are code-drawn
+stand-ins; each kind has one image slot, so painted art can replace them without touching the
+rules.

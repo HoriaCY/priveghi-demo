@@ -82,6 +82,15 @@ async function openWake(): Promise<Wake> {
 
 async function main(): Promise<void> {
   await loadFaces();
+  if (params.has('icon')) {
+    // the home-screen icon: the troita niche on the room's dark (scripts/make-icons.mjs photographs it)
+    const { nicheSVG } = await import('./render/furniture');
+    const icon = document.createElement('div');
+    icon.className = 'icon-mark';
+    icon.innerHTML = nicheSVG('icon', { roof: true, thread: true, icon: true });
+    document.body.append(icon);
+    return;
+  }
   if (params.has('sheet')) {
     // every card face on one page: the wireframe an artist replaces (docs/shots/step-2/cards-sheet.png)
     const { cardSheet } = await import('./render/sheet');

@@ -7,6 +7,7 @@ import { LOOK } from './catalog';
 import { candleSVG, cordSVG, darkDoorSVG, dishSVG, grainRowSVG, markSVG, nicheSVG, pipsSVG, plankSVG, stillLifeSVG, type Mark } from './furniture';
 import { CANDLE_BOX, DOOR_X, JALE, MARKS, NICHE, ON_PLANK, PLANK, ROW_CLOTH, ROW_KIT, flameAt, nicheX, rowSlots, shadowFor } from './layout';
 import { M } from './motifs';
+import { TUNING } from '../tuning';
 import { C } from './palette';
 
 const NICHES: { id: Niche; mark?: Mark; roof?: boolean; thread?: boolean; icon?: boolean }[] = [
@@ -44,6 +45,7 @@ const keyOf = (c: Card) => (c.kind === 'fir_de_dor' ? `fir_de_dor:${c.grains}` :
 const uidOf = (key: string) => key.replace(/[^a-z0-9]/g, '-');
 const nicheOf = (c: Card): Niche | null => (typeof c.at === 'object' ? c.at.niche : null);
 const face = (uid: string, kind: Kind) => cardSVG({ uid, name: NAMES[kind].ro, ...LOOK[kind] });
+const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 export class Table {
   private readonly stacks = new Map<string, HTMLElement>();
@@ -228,7 +230,7 @@ export class Table {
 
   private updateStack(stack: HTMLElement, g: Group, p: { x: number; y: number }): void {
     const n = g.ids.length;
-    stack.style.transform = `translate(${p.x}px, ${p.y}px)`;
+    this.settle(stack, p);
     stack.classList.toggle('n2', n === 2);
     stack.classList.toggle('n3', n >= 3);
     stack.querySelector('.count')!.textContent = n > 1 ? `×${n}` : '';
@@ -240,6 +242,28 @@ export class Table {
     stack.style.setProperty('--sx', `${sh.sx.toFixed(2)}px`);
     stack.style.setProperty('--sy', `${sh.sy.toFixed(2)}px`);
     stack.style.filter = `brightness(${sh.warm.toFixed(3)})`;
+  }
+
+  /** A moving card settles one pixel short, then takes the last pixel (brief §8): no spring, no bounce. */
+  private settle(stack: HTMLElement, p: { x: number; y: number }): void {
+    const x0 = Number(stack.dataset.x ?? p.x);
+    const y0 = Number(stack.dataset.y ?? p.y);
+    stack.dataset.x = String(p.x);
+    stack.dataset.y = String(p.y);
+    const exact = `translate(${p.x}px, ${p.y}px)`;
+    window.clearTimeout(Number(stack.dataset.settle ?? 0));
+    if ((x0 === p.x && y0 === p.y) || REDUCED) {
+      stack.style.transform = exact;
+      return;
+    }
+    stack.style.transform = `translate(${p.x - Math.sign(p.x - x0)}px, ${p.y - Math.sign(p.y - y0)}px)`;
+    const timer = window.setTimeout(() => {
+      if (stack.classList.contains('lifted')) return;
+      stack.classList.add('settle');
+      stack.style.transform = exact;
+      window.setTimeout(() => stack.classList.remove('settle'), 20);
+    }, TUNING.settle_ms);
+    stack.dataset.settle = String(timer);
   }
 
   private renderNiche(id: Niche, inside: Card[], run: Run | undefined, locked: boolean): void {

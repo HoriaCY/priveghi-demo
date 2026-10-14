@@ -73,6 +73,7 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stage .cards > * { pointer-events: auto; }
 .stack { position: absolute; left: 0; top: 0; width: 108px; height: 151px; transition: transform .32s cubic-bezier(.2, 0, 0, 1); will-change: transform; }
 .stack .face, .stack .under { position: absolute; inset: 0; }
+.stack.settle { transition: none; }
 .stack .face svg { filter: drop-shadow(var(--sx, 3px) var(--sy, 4px) 2px var(--soot-smudge)); }
 .stack .under { background: var(--earth); box-shadow: inset 0 0 0 1.5px var(--soot); display: none; }
 .stack .u1 { transform: translate(3px, 3px); }
@@ -109,6 +110,9 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .cards .tied { position: absolute; width: 30px; height: 42px; }
 .cards .tied svg { filter: drop-shadow(0 1px 1px var(--soot-smudge)); }
 .cards .tied:empty { display: none; }
+/* small things a thumb must still find: at least 44 CSS px on the phone */
+.cards .tied::after { content: ''; position: absolute; inset: -22px -16px; }
+.daytag::after { content: ''; position: absolute; inset: -30px -24px; }
 .daytag {
   position: absolute; left: 16px; top: 12px; padding: 2px 12px 3px; background: var(--paper); color: var(--soot);
   font: 600 16px/1.3 var(--body); border: 1.5px solid var(--soot); box-shadow: 3px 4px 0 var(--soot-smudge);
@@ -206,8 +210,15 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   .flame { animation: none; }
   .stack { transition-duration: .09s; }
   .toast { transition-duration: .09s; }
+  .night, .maincandle { transition-duration: .2s; }
+  .bride .cards > * { transition-duration: .2s; }
 }
 
 /* ?sheet: every card face on one page */
 .sheet { position: fixed; inset: 0; display: grid; grid-template-columns: repeat(6, 180px); gap: 22px; padding: 24px; background: var(--soot); overflow: auto; align-content: start; justify-content: center; }
 .sheet-card { width: 180px; height: 252px; }
+
+/* ?icon: the troita niche, framed for the home screen */
+.icon-mark { position: fixed; left: 0; top: 0; width: 512px; height: 512px; background: var(--room); display: grid; place-items: center; }
+.icon-mark svg { width: 300px; height: 420px; }
+.icon-mark .flame { animation: none; }
