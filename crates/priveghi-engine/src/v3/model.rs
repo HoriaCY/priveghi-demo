@@ -155,7 +155,7 @@ impl Loc {
 #[serde(rename_all = "snake_case")]
 pub enum Verb {
     Odihneste,
-    Umbla,
+    Bantuie,
     Asculta,
     Urneste,
     Sopteste,
@@ -496,8 +496,8 @@ pub enum Action {
         dor: u32,
         grade: Grade,
     },
-    /// UMBLA: you are there at once; its finds come to the kit row, its sleeper within reach.
-    Umbla {
+    /// BANTUIE (the dead do not walk: you are there at once); its finds come to the kit row, its sleeper within reach.
+    Bantuie {
         loc: u32,
     },
     /// ASCULTA: a fragment of what this person says of you.

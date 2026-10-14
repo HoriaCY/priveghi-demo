@@ -334,7 +334,7 @@ impl Chibzuit {
                 for loc in [Loc::Tinda, Loc::Curte] {
                     if !w.state.walked.contains(&loc) && d >= 4 {
                         let id = loc_id(w, loc);
-                        w.apply(Action::Umbla { loc: id }, now).unwrap();
+                        w.apply(Action::Bantuie { loc: id }, now).unwrap();
                         break;
                     }
                 }
@@ -355,7 +355,7 @@ impl Chibzuit {
             for (loc, who) in [(Loc::Sat, Om::Dusman), (Loc::Biserica, Om::Preot)] {
                 if want.contains(&who) && (who != Om::Preot || !w.state.biserica_known) {
                     let id = loc_id(w, loc);
-                    w.apply(Action::Umbla { loc: id }, now).unwrap();
+                    w.apply(Action::Bantuie { loc: id }, now).unwrap();
                     break;
                 }
             }

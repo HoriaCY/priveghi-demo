@@ -1,8 +1,9 @@
 //! The dead's wake, one pure step per action. Inside a day a hand commits acts and resolves their
-//! plays, walks, listens and ties; everything else resolves at the close, in the chapter's published
-//! order (§3), which is the simulator's `close()` verbatim: the open play as a skip -> Dor rot ->
+//! plays, goes about, listens and ties; everything else resolves at the close, in the chapter's published
+//! order (§3), which is the simulator's `close()` verbatim: the open play as a skip -> Dor rot -> the
+//! Bride on the last day ->
 //! the sill's tick -> the soroc -> the burial -> the dark-dawn pip -> the pomane expire -> the Uitare
-//! check -> the Hunter -> the priest -> Spaima decay -> the wedding -> the candle for tomorrow ->
+//! check -> the Hunter -> the priest -> Spaima decay -> Ratacire on the last day -> the candle for tomorrow ->
 //! Putere -> arrivals, last, so the lifetime rule exempts them at this close.
 
 use super::config::Config;
@@ -19,6 +20,7 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         precued: false,
         closing: false,
     };
+    let acc_start = config.acc_start_m;
     let mut s = State {
         config,
         phase: Phase::Boot,
@@ -33,7 +35,7 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         candle: true,
         under: 0,
         standing_m: [0; 5],
-        acc_m: [0; 5],
+        acc_m: [acc_start; 5],
         last_sent: [0; 5],
         afterglow: Vec::new(),
         amintiri: Default::default(),
@@ -99,7 +101,7 @@ pub fn step(state: &State, action: Action, now_ms: u64) -> Result<State, Refusal
             Action::Resume => resume(&mut s, now_ms),
             Action::Place { dor, on } => place(&mut s, dor, on)?,
             Action::Resolve { dor, grade } => resolve(&mut s, dor, grade)?,
-            Action::Umbla { loc } => umbla(&mut s, loc)?,
+            Action::Bantuie { loc } => bantuie(&mut s, loc)?,
             Action::Asculta { om } => asculta(&mut s, om)?,
             Action::Tie { dor } => tie(&mut s, dor)?,
             Action::Untie { dor } => untie(&mut s, dor)?,
@@ -328,7 +330,7 @@ fn cost_of(cfg: &Config, verb: Verb) -> u8 {
         Verb::Urneste => cfg.cost_urneste,
         Verb::Sopteste => cfg.cost_sopteste,
         Verb::Arata => cfg.cost_arata,
-        Verb::Umbla => cfg.cost_umbla,
+        Verb::Bantuie => cfg.cost_umbla,
         Verb::Asculta => cfg.cost_asculta,
         Verb::Odihneste => 0,
     }
@@ -487,8 +489,8 @@ fn pomenire(s: &mut State, n: u8, src: Option<Om>) {
     log(s, Event::Pomenire { n, uitare });
 }
 
-/// UMBLA: a place on the road row; you are there at once (chapter §9).
-fn umbla(s: &mut State, loc_id: u32) -> Result<bool, Refusal> {
+/// BANTUIE: a place on the road row; you are there at once (chapter §9).
+fn bantuie(s: &mut State, loc_id: u32) -> Result<bool, Refusal> {
     awake(s)?;
     if s.commit.is_some() {
         return Err(Refusal::Busy);
@@ -603,6 +605,13 @@ fn close_day(s: &mut State, now: u64, early: bool) {
     }
     let d = s.day;
     rot(s, d);
+    // on the last day the Bride stands before the house's last meal (chapter §10, ruled 2026-10-14)
+    if d >= cfg.zile && s.uitare <= cfg.nunta_uitare {
+        s.phase = Phase::Door;
+        s.ending = Some(Ending::Nunta);
+        log(s, Event::BrideStands);
+        return;
+    }
     if cfg.soroace.contains(&d) {
         if s.uitare < cfg.soroc_uitare_max || s.minune_promise {
             s.minune_promise = false;
@@ -663,13 +672,8 @@ fn close_day(s: &mut State, now: u64, early: bool) {
     }
     s.spaima = s.spaima.saturating_sub(cfg.spaima_decay);
     if d >= cfg.zile {
-        if s.uitare <= cfg.nunta_uitare {
-            s.phase = Phase::Door;
-            s.ending = Some(Ending::Nunta);
-            log(s, Event::BrideStands);
-        } else {
-            end(s, Ending::Ratacire);
-        }
+        // the door stayed dark at the check: you remain
+        end(s, Ending::Ratacire);
         return;
     }
     // the house stops lighting the candle at the threshold, and relights only after

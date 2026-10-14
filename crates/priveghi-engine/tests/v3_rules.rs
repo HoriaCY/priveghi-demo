@@ -161,10 +161,8 @@ fn a_long_gap_between_ticks_closes_one_day_not_many() {
 // ---------------------------------------------------------------- Dor (§4)
 
 #[test]
-fn no_dor_on_day_one_two_on_day_two_from_the_mother_and_the_betrothed() {
-    let mut w = wake();
-    assert!(dor_ids(&w, Where::Cloth).is_empty(), "the accumulators start at nothing");
-    close(&mut w);
+fn three_dor_on_day_one_the_mothers_the_enemys_the_betrotheds() {
+    let w = wake();
     let got: Vec<(Fel, Om)> = dor_ids(&w, Where::Cloth)
         .iter()
         .map(|d| {
@@ -172,14 +170,23 @@ fn no_dor_on_day_one_two_on_day_two_from_the_mother_and_the_betrothed() {
             (f, o)
         })
         .collect();
-    assert_eq!(got, vec![(Fel::Neam, Om::Mama), (Fel::Dragoste, Om::Draguta)]);
+    assert_eq!(
+        got,
+        vec![(Fel::Neam, Om::Mama), (Fel::Vrajba, Om::Dusman), (Fel::Dragoste, Om::Draguta)],
+        "primed accumulators; the simulator's tie-break by name"
+    );
+}
+
+/// Draguta's longing on the cloth, whichever day.
+fn dragostea(w: &Wake) -> u32 {
+    dor_ids(w, Where::Cloth).into_iter().find(|d| dor(w, *d).1 == Om::Draguta).expect("her Dor")
 }
 
 #[test]
 fn a_dor_is_exempt_at_the_close_it_arrives_and_gutters_at_the_third_close_after() {
     let mut w = wake();
     close(&mut w); // close 1: day 2's Dor arrive with three days
-    let d = dor_ids(&w, Where::Cloth)[0];
+    let d = *dor_ids(&w, Where::Cloth).last().unwrap();
     assert_eq!(dor(&w, d).2, 3);
     close(&mut w);
     assert_eq!(dor(&w, d).2, 2);
@@ -209,7 +216,7 @@ fn the_house_sends_at_most_three_dor_a_day_and_one_per_person() {
 fn the_sill_slows_a_tied_dor_one_day_every_three_closes() {
     let mut w = wake();
     close(&mut w);
-    let d = dor_ids(&w, Where::Cloth)[0];
+    let d = *dor_ids(&w, Where::Cloth).last().unwrap();
     w.apply(Action::Tie { dor: d }, by_day(&w)).unwrap(); // tied on day 2
     assert_eq!(card(&w, d).at, Where::Sill);
     close(&mut w);
@@ -271,7 +278,7 @@ fn the_mothers_longing_in_the_mothers_kerchief_is_a_living_memory() {
 fn the_wrong_thing_still_makes_a_faded_memory_never_a_wasted_turn() {
     let mut w = wake();
     close(&mut w);
-    let d = dor_ids(&w, Where::Cloth)[1]; // Draguta's, dragoste
+    let d = dragostea(&w); // dragoste
     let icoana = lucru_id(&w, Lucru::Icoana); // [rugaciune, neam], Mama's
     let now = by_day(&w);
     act(&mut w, d, icoana, Grade::Bun, now).unwrap();
@@ -451,7 +458,7 @@ fn a_fragment_matches_any_dor_for_one_point_and_at_most_two_are_held() {
     assert_eq!(w.apply(Action::Asculta { om: mama }, now), Err(Refusal::Full));
     assert_eq!(w.state.putere, 4, "listening costs nothing");
     close(&mut w);
-    let d = dor_ids(&w, Where::Cloth)[1];
+    let d = dragostea(&w);
     let f = franturi(&w)[0];
     let now = by_day(&w);
     act(&mut w, d, f, Grade::Bun, now).unwrap();
@@ -495,9 +502,9 @@ fn the_village_opens_at_night_from_the_burial_and_brings_its_sleeper() {
     close(&mut w); // day 3
     let sat = loc_id(&w, Loc::Sat);
     assert_eq!(card(&w, sat).at, Where::Road);
-    assert_eq!(w.apply(Action::Umbla { loc: sat }, by_day(&w)), Err(Refusal::OnlyAtNight));
+    assert_eq!(w.apply(Action::Bantuie { loc: sat }, by_day(&w)), Err(Refusal::OnlyAtNight));
     let now = dusk(&mut w);
-    w.apply(Action::Umbla { loc: sat }, now).unwrap();
+    w.apply(Action::Bantuie { loc: sat }, now).unwrap();
     assert_eq!(w.state.night_at, Some(Loc::Sat));
     assert_eq!(card(&w, om_id(&w, Om::Dusman)).at, Where::Cloth);
     assert_eq!(w.state.putere, 3);
@@ -512,7 +519,7 @@ fn the_church_once_walked_keeps_the_priest_within_reach() {
     close(&mut w);
     let biserica = loc_id(&w, Loc::Biserica);
     let now = dusk(&mut w);
-    w.apply(Action::Umbla { loc: biserica }, now).unwrap();
+    w.apply(Action::Bantuie { loc: biserica }, now).unwrap();
     assert!(w.state.biserica_known);
     close(&mut w);
     assert_eq!(card(&w, om_id(&w, Om::Preot)).at, Where::Cloth);
@@ -522,13 +529,13 @@ fn the_church_once_walked_keeps_the_priest_within_reach() {
 fn the_first_wander_in_the_porch_brings_the_knife_and_the_flute_once() {
     let mut w = wake();
     let tinda = loc_id(&w, Loc::Tinda);
-    w.apply(Action::Umbla { loc: tinda }, by_day(&w)).unwrap();
+    w.apply(Action::Bantuie { loc: tinda }, by_day(&w)).unwrap();
     assert!(matches!(
         &card(&w, lucru_id(&w, Lucru::Cutit)).kind,
         Kind::Lucru { owner: Some(Om::Dusman), .. }
     ));
     assert_eq!(card(&w, lucru_id(&w, Lucru::Fluier)).at, Where::Kit);
-    w.apply(Action::Umbla { loc: tinda }, by_day(&w)).unwrap();
+    w.apply(Action::Bantuie { loc: tinda }, by_day(&w)).unwrap();
     assert_eq!(
         w.state.cards.iter().filter(|c| matches!(&c.kind, Kind::Lucru { lucru: Lucru::Cutit, .. })).count(),
         1
@@ -649,13 +656,11 @@ fn the_candle_goes_out_at_four_and_relights_after_two_dawns_under() {
 
 #[test]
 fn the_forecast_is_uitare_plus_the_loose_dor_by_stub() {
+    let w = wake();
+    assert_eq!(forecast(&w.state), [0, 0, 3], "three loose Dor, three days each");
     let mut w = wake();
     close(&mut w);
-    assert_eq!(forecast(&w.state), [0, 0, 2]);
-    close(&mut w);
-    let f = forecast(&w.state);
-    assert_eq!(f[0], 0);
-    assert_eq!(f[1], 2);
+    assert_eq!(forecast(&w.state), [0, 3, 5], "day one's three are a day nearer; two more came");
 }
 
 // ---------------------------------------------------------------- Spaima: the priest and the Hunter (§8)
@@ -701,10 +706,14 @@ fn at_nine_the_hunter_stakes_you_before_the_priest_can_speak() {
 fn fright_feeds_the_enemys_longing() {
     let dusman_dor =
         |w: &Wake| dor_ids(w, Where::Cloth).iter().filter(|d| dor(w, **d).1 == Om::Dusman).count();
-    let mut calm = with(|c| c.base_m = [0, 0, 0, 350, 0]);
+    let unprimed = |c: &mut Config| {
+        c.base_m = [0, 0, 0, 350, 0];
+        c.acc_start_m = 0;
+    };
+    let mut calm = with(unprimed);
     close(&mut calm);
     assert_eq!(dusman_dor(&calm), 0, "the enemy forgets fastest: no second-day Dor by himself");
-    let mut afraid = with(|c| c.base_m = [0, 0, 0, 350, 0]);
+    let mut afraid = with(unprimed);
     afraid.state.spaima = 5;
     close(&mut afraid);
     assert_eq!(dusman_dor(&afraid), 1, "a frightened village thinks of you");
@@ -719,7 +728,7 @@ fn at_the_ninth_close_with_little_uitare_the_bride_stands_in_the_door_and_treci_
         close(&mut w);
     }
     assert_eq!(w.state.day, 9);
-    w.state.uitare = 3;
+    w.state.uitare = 2; // the enemy's afterglow Dor gutters at this close: three at the check
     close(&mut w);
     assert_eq!(w.state.phase, Phase::Door);
     assert_eq!(w.state.ending, Some(Ending::Nunta));
@@ -729,22 +738,31 @@ fn at_the_ninth_close_with_little_uitare_the_bride_stands_in_the_door_and_treci_
     assert!(w.state.treci);
 }
 
-/// The ninth close is a soroc, and the soroc resolves before the wedding check: held (under six), it
-/// takes three off and the Bride stands; skipped (six or more), it adds three and the Uitare ending
-/// follows. So in the nine-day wake the door never merely stays dark at the ninth close: the
-/// addendum's "Uitare 4-8" page is unreachable as simulated. A finding for the chapter, not a rule.
-/// (The day-three soroc's afterglow still sends five Dor to this untended table; the enemy's gutters
-/// at this very close, so the counts below start one lower.)
+/// On the last day the Bride stands before the house's last meal (ruled 2026-10-14): the wedding
+/// check runs right after the rot, ahead of the soroc. Under its threshold, the Bride; above it the
+/// door stays dark, the ninth soroc resolves as any soroc, and you remain (Ratacire) unless the
+/// skipped soroc takes Uitare to nine. (The day-three soroc's afterglow still sends five Dor to this
+/// untended table; the enemy's gutters at this very close, so the counts below start one lower.)
 #[test]
-fn at_the_ninth_close_the_soroc_decides_before_the_bride_does() {
+fn at_the_ninth_close_the_bride_stands_before_the_soroc_or_the_door_stays_dark() {
     let mut w = with(|c| c.base_m = [0; 5]);
     for _ in 1..9 {
         close(&mut w);
     }
-    w.state.uitare = 4;
+    w.state.uitare = 2;
     close(&mut w);
-    assert_eq!(w.state.uitare, 2, "the guttered Dor made five, the soroc took three");
-    assert_eq!(w.state.ending, Some(Ending::Nunta));
+    assert_eq!(w.state.ending, Some(Ending::Nunta), "three after the gutter: the Bride");
+    assert!(!w.state.stats.soroace.contains(&9), "the wedding is the ninth meal");
+
+    let mut w = with(|c| c.base_m = [0; 5]);
+    for _ in 1..9 {
+        close(&mut w);
+    }
+    w.state.uitare = 3;
+    close(&mut w);
+    assert_eq!(w.state.ending, Some(Ending::Ratacire), "four at the check: the door stays dark");
+    assert_eq!(w.state.uitare, 1, "the house still held the ninth soroc");
+    assert_eq!(w.state.stats.soroace, vec![3, 9]);
 
     let mut w = with(|c| c.base_m = [0; 5]);
     for _ in 1..9 {
