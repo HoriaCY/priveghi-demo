@@ -102,6 +102,8 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   font-size: 16px; color: var(--earth); text-transform: uppercase; letter-spacing: .03em; line-height: 1;
 }
 .stilllife { position: absolute; left: 858px; top: 556px; width: 180px; height: 120px; pointer-events: none; }
+/* the pre-cue: the flame gutters, low and dim, for the last 0.4 s of the day */
+.maincandle.gutter .flame { animation: none; transform: scale(.75, .5); opacity: .7; }
 
 /* step 3: Frant's cords, the sill, the day, the candle's pips, the wreath, a refusal's strip */
 .verb .cord { position: absolute; left: 0; top: 0; width: 150px; height: 210px; display: none; pointer-events: none; }

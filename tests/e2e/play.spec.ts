@@ -74,6 +74,7 @@ test('tapping the flame closes the day after the pre-cue', async ({ page }) => {
   await open(page, '');
   await expect(page.locator('body')).toHaveAttribute('data-day', '1');
   await page.locator('.flame-hit').click();
+  await expect(page.locator('.maincandle')).toHaveClass(/gutter/);
   await expect(page.locator('body')).toHaveAttribute('data-day', '2');
 });
 

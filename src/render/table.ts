@@ -160,6 +160,12 @@ export class Table {
     this.wreath.hidden = !(s.phase === 'ended' && s.ending === 'cununie');
   }
 
+  /** The pre-cue made visible: the candle's flame gutters once before the day closes (Telegraph Law). */
+  gutter(ms: number): void {
+    this.candle.classList.add('gutter');
+    window.setTimeout(() => this.candle.classList.remove('gutter'), ms);
+  }
+
   /** The drop target under a point of the reference frame, if any. The dark door never is one. */
   targetAt(x: number, y: number): Target | null {
     for (let i = 0; i < NICHES.length; i++) {

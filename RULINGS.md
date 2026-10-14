@@ -53,3 +53,4 @@ R14 (changed), with R19–R23 added from the same answers. Later rows are provis
 | R44 | On a phone the page folds over the table's right side (320 reference px) and folds away on a tap; the day tag opens it. The day tag and the sill's cards get invisible tap areas of at least 44 CSS px at the phone's scale. | Brief §3.2 and §4 (44 px hit areas). | — |
 | R45 | The home-screen icon is the troiță niche drawn by the app's own code, photographed at 180 and 512 px; the manifest asks for full screen in landscape. | Brief §4. | — |
 | R46 | A palette guard joins the checks: only the nine anchors and the prototype's neutrals, never `#000`, Voroneț blue on the wreath alone, gold never in a gradient. | Brief §8. | — |
+| R47 | The pre-cue is seen as well as heard: for the last 0.4 s of a day the table candle's flame gutters, low and dim, then the close. | Brief §3.6 ("the candle's flame gutters at T−0.4 s"). | — |

@@ -168,6 +168,7 @@ async function main(): Promise<void> {
     stage.classList.toggle('bride', s.phase === 'ended' && s.ending === 'cununie');
     for (const e of fresh) {
       sound(e);
+      if (e.event === 'precue') table.gutter(s.config.precue_ms);
       if (e.event === 'kindled') {
         // thread, the toaca, the chime; the candle becomes the table's; the pool opens over 1.8 s
         SOUND.thread();
