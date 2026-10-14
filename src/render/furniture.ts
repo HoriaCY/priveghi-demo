@@ -101,3 +101,21 @@ export function rotateSVG(): string {
     <rect x="47" y="59" width="66" height="32" fill="none" stroke="${C.earth}" stroke-width="1.5"/>
     <path d="M110 30 Q132 40 130 66" fill="none" stroke="${C.wax}" stroke-width="1.6"/><path d="M125 60 L130 67 L135 60" fill="none" stroke="${C.wax}" stroke-width="1.6"/></svg>`;
 }
+
+/** Frant: hemp cords across a niche's opening, as across a bound card (prototype's Legat state). */
+export function cordSVG(): string {
+  const cords = [72, 102, 132, 162]
+    .map((y) => `<path d="M14 ${y} L136 ${y + 22}" stroke="${C.woodLight}" stroke-width="4.5"/><path d="M14 ${y} L136 ${y + 22}" stroke="${C.soot}" stroke-width="4.5" stroke-dasharray="3 3"/>`)
+    .join('');
+  return `<svg viewBox="0 0 150 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${cords}</svg>`;
+}
+
+/** Vigoare: three wax drops by the dish; a lost one goes dark. */
+export function pipsSVG(left: number, total: number): string {
+  let s = '';
+  for (let i = 0; i < total; i++) {
+    const x = 10 + i * 20;
+    s += `<path d="M${x} 2 Q${x + 5} 9 ${x} 12 Q${x - 5} 9 ${x} 2 Z" fill="${i < left ? C.wax : C.soot}" stroke="${C.soot}" stroke-width="1.2"/>`;
+  }
+  return `<svg viewBox="0 0 ${total * 20} 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${s}</svg>`;
+}

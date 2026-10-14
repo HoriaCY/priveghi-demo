@@ -32,6 +32,11 @@ impl Game {
         Game { state: new_state(config, now_ms), rng: Rng::new(seed) }
     }
 
+    /// What `apply` would answer, without applying it: the renderer asks before it lights a niche.
+    pub fn probe(&self, action: Action, now_ms: u64) -> Result<bool, Refusal> {
+        self.clone().apply(action, now_ms)
+    }
+
     /// Applies one action. `Ok(true)` when the state changed; a refusal changes nothing.
     pub fn apply(&mut self, action: Action, now_ms: u64) -> Result<bool, Refusal> {
         let mut rng = self.rng.clone();

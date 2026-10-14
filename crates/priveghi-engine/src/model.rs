@@ -75,6 +75,8 @@ impl Niche {
 pub enum Loc {
     Table,
     Niche(Niche),
+    /// Tied on the troita's sill: a Fir de dor there does not decay.
+    Sill,
     /// Cel Nenuntit's plank at the cloth's far left; he never leaves it.
     Plank,
 }
@@ -94,6 +96,8 @@ pub struct Card {
 #[serde(rename_all = "snake_case")]
 pub enum Target {
     Niche(Niche),
+    /// The table candle's clay dish.
+    Candle,
 }
 
 /// What a niche was committed to at the close that started it. Sealed until it resolves.
@@ -132,6 +136,16 @@ pub struct Clock {
 pub enum Phase {
     Wake,
     Ended,
+}
+
+/// How a wake ends (brief §3.7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Ending {
+    /// The marks were kept: the page turns to the Pomelnic.
+    Pomelnic,
+    /// The Bride's wreath is set down on the far sill.
+    Cununie,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,7 +197,26 @@ pub enum Event {
     JaleMourned {
         n: u32,
     },
-    Ended,
+    /// The flask came back from the troita: the day was rested.
+    Rested,
+    Tied {
+        cards: Vec<u32>,
+    },
+    WaxFed {
+        wax: u8,
+    },
+    WaxBurned {
+        wax: u8,
+    },
+    /// The candle was out at this close.
+    DarkClose {
+        vigoare: u8,
+    },
+    FrantLocked,
+    FrantLifted,
+    Ended {
+        ending: Ending,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -207,6 +240,14 @@ pub struct State {
     pub sung: u32,
     /// Lit pips: one per `dor_per_bocet` Dor sung.
     pub bocete: u32,
+    /// The table candle's height, in notches.
+    pub wax: u8,
+    pub vigoare: u8,
+    /// Dark closes in a row.
+    pub dark: u8,
+    /// Broken by grief: three niches lock until the Jale is mourned.
+    pub frant: bool,
+    pub ending: Option<Ending>,
     pub next_id: u32,
     /// Bumped on every change, so a renderer can skip frames where nothing happened.
     pub rev: u32,
@@ -251,6 +292,8 @@ pub enum Refusal {
     Busy,
     /// Nothing here takes this card.
     DoesNotFit,
+    /// Frant: this niche is tied shut until the Jale is mourned.
+    Locked,
     /// No cards given, or none of them in a niche.
     Nothing,
 }
