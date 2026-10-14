@@ -1,5 +1,6 @@
 // Hands at the table. Drag a card or a stack onto a niche or the candle's dish; drag a card a niche
-// still holds back onto the cloth; tap the flame to close the day. The renderer never decides a rule:
+// still holds back onto the cloth; tap the flame to close the day; tap a card for its strip, tap it
+// again or hold it for the page (brief §3.2). The renderer never decides a rule:
 // it asks the engine (probe) before a niche answers by contour weight, and the engine's answer to the
 // drop is final. Keyboard: Enter on a card picks it up, Enter on a niche or the dish puts it down.
 import type { Target } from '../engine';
@@ -14,6 +15,8 @@ export interface Hands {
   tapFlame(): void;
   lifted(): void;
   refused(): void;
+  /** A tap (or a hold, `long`) on anything carrying data-tap. */
+  tap(el: HTMLElement, long: boolean): void;
 }
 
 interface Drag {
@@ -25,6 +28,7 @@ interface Drag {
   base: string;
   moved: boolean;
   over: Target | null;
+  t0: number;
 }
 
 const idsOf = (el: HTMLElement) => (el.dataset.ids ?? '').split(' ').filter(Boolean).map(Number);
@@ -47,12 +51,14 @@ export function attachInput(stage: HTMLElement, table: Table, hands: Hands): voi
   };
 
   stage.addEventListener('pointerdown', (e) => {
-    const el = (e.target as Element).closest<HTMLElement>('[data-drag]');
+    const hit = e.target as Element;
+    const el = hit.closest<HTMLElement>('[data-drag]') ?? hit.closest<HTMLElement>('[data-tap]');
     if (!el || drag) return;
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
     const p = toStage(e);
-    drag = { el, ids: idsOf(el), from: el.dataset.drag ?? 'table', x0: p.x, y0: p.y, base: el.style.transform, moved: false, over: null };
+    const from = el.dataset.drag ?? 'tap';
+    drag = { el, ids: idsOf(el), from, x0: p.x, y0: p.y, base: el.style.transform, moved: false, over: null, t0: performance.now() };
   });
 
   stage.addEventListener('pointermove', (e) => {
@@ -61,7 +67,7 @@ export function attachInput(stage: HTMLElement, table: Table, hands: Hands): voi
     const dx = p.x - drag.x0;
     const dy = p.y - drag.y0;
     if (!drag.moved) {
-      if (Math.hypot(dx, dy) * p.k < TUNING.drag_slop_px) return;
+      if (Math.hypot(dx, dy) * p.k < TUNING.drag_slop_px || drag.from === 'tap') return;
       drag.moved = true;
       drag.el.classList.add('lifted');
       hands.lifted();
@@ -78,7 +84,7 @@ export function attachInput(stage: HTMLElement, table: Table, hands: Hands): voi
     drag = null;
     d.el.classList.remove('lifted');
     d.el.style.transform = d.base;
-    if (!d.moved) return; // a tap: the paper strip with the card's name arrives in step 5
+    if (!d.moved) return hands.tap(d.el, performance.now() - d.t0 >= TUNING.long_press_ms);
     if (over) {
       if (!hands.place(d.ids, over)) hands.refused();
     } else if (d.from !== 'table') {

@@ -52,7 +52,7 @@ fn speaking_a_name_at_the_door_keeps_the_name_and_brings_a_blessing_for_a_day() 
 #[test]
 fn the_next_wander_under_a_blessing_draws_one_more_dor_and_spends_it() {
     // a two-day blessing, so spending it differs from its fading
-    let mut g = Game::with_config(Config { binecuvantare_zile: 2, ..cfg() }, 7, T0);
+    let mut g = begin(Config { binecuvantare_zile: 2, ..cfg() }, 7);
     a_name(&mut g);
     place(&mut g, Kind::Nume, 1, Niche::Descanta).unwrap();
     close(&mut g); // day 4: the blessing arrives
@@ -193,7 +193,7 @@ fn only_coliva_is_offered() {
 
 #[test]
 fn the_offering_stays_open_under_frant() {
-    let mut g = Game::with_config(Config { dor_zile: 1, ..cfg() }, 7, T0);
+    let mut g = begin(Config { dor_zile: 1, ..cfg() }, 7);
     hearth(&mut g);
     wander(&mut g, true); // day 1: coliva made, three Dor that rot at the next close
     close(&mut g); // day 2 closes: three Jale, the watcher breaks

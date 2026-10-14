@@ -12,6 +12,16 @@ export class Wake {
     return new Wake(new Engine(seed, now));
   }
 
+  /** A wake from a save (`save()`); null if the save does not load. */
+  static async load(save: string): Promise<Wake | null> {
+    await init();
+    try {
+      return new Wake(Engine.load(save));
+    } catch {
+      return null;
+    }
+  }
+
   state(): State {
     return JSON.parse(this.engine.state()) as State;
   }

@@ -4,12 +4,14 @@ A nine-day wake kept at a card table, in the browser. The rules engine is Rust c
 WebAssembly (`crates/priveghi-engine`); the renderer is TypeScript built with Vite. Static files
 only: no server.
 
-**Status: step 4 of 6: the full loop.** Wander Codrii Vlăsiei for Fir de dor; have Rada mourn
-them before they rot to Jale; listen to the lullaby for a Nume and speak it at the dark door for
-a blessing; host the peddler for wheat; let the hearth make colivă and lay it on Cel Nenuntit on
-days 3 and 9. Keep both marks and the wake is kept; miss one and the Bride's wreath comes to the
-far seat. Rest at the troiță, feed the candle, and watch Frânt. The boot, the page, the ending's
-beats and saving come in step 5. Open design calls are listed in [RULINGS.md](RULINGS.md);
+**Status: step 5 of 6: the whole wake.** A cold start is a dark frame: touch it, a match is
+struck, the troiță's flame catches, and the candle on its sill, carried into the troiță, becomes
+the table's candle as the light opens. Then the full loop: wander, mourn, listen, speak at the
+dark door, host the peddler, make colivă and lay it on Cel Nenuntit on days 3 and 9. Tap a card
+for its strip; tap again or hold for the page (beside or below the table on an iPad or desktop,
+over it on a phone). Day nine brings the ison: the Pomelnic if both marks were kept; otherwise
+the Bride's wreath, and „Nu încă.” begins another wake with one less wax. The wake is saved on
+this device; `?reset` clears it. Open design calls are listed in [RULINGS.md](RULINGS.md);
 screenshots of each step are in [docs/shots](docs/shots).
 
 `?fixture=wake` shows a table in the middle of the wake, `?fixture=frant` a broken watcher;

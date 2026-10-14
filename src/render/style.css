@@ -131,6 +131,45 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 }
 .toast.show { opacity: 1; }
 
+/* step 5: the boot's darkness, the candle that becomes the table's, the Bride's dimming */
+.night { position: absolute; inset: 0; pointer-events: none; z-index: 25; opacity: 0; transition: opacity 1.8s ease; }
+.booting .night { opacity: 1; transition: none; }
+.booting:not(.dark0) .night { --hole: 110px; }
+.dark0 .night { background: rgba(17, 14, 11, .985) !important; }
+.dark0 .verb[data-niche="troita"] .flame, .dark0 .cards .tied { visibility: hidden; }
+.booting .cards > :not(.tied), .booting .flame-hit, .booting .daytag { pointer-events: none; }
+/* zero text until the candle is lit (brief §3.1) */
+.booting .daytag, .booting .vname, #stage.booting ~ .page { visibility: hidden !important; }
+.maincandle { transition: opacity 1.8s ease, transform 1.8s cubic-bezier(.2, 0, 0, 1); }
+.booting .maincandle { opacity: 0; transform: translate(-830px, -250px) scale(.6); transition: none; }
+.bride .cards > *, .bride .verb:not([data-niche="troita"]), .bride .maincandle, .bride .dish, .bride .farcandle, .bride .stilllife {
+  filter: saturate(.45) brightness(.7) !important; transition: filter 2.4s ease;
+}
+
+/* the page: paper beside the table, below it, or over it on a phone */
+.page {
+  position: absolute; left: 0; top: 0; transform-origin: 0 0; background: var(--paper); color: var(--soot);
+  font: 19px/1.45 var(--body); padding: 22px 24px; box-shadow: inset 0 0 0 2px var(--soot); overflow: hidden;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.page.below { flex-direction: row; align-items: flex-start; gap: 36px; }
+.page.phone { display: none; box-shadow: inset 0 0 0 2px var(--soot), -6px 0 0 var(--soot-smudge); z-index: 50; }
+.page.phone.open { display: flex; }
+.page .day { font: 600 24px/1.2 var(--display); }
+.page .nm { font: 600 24px/1.2 var(--display); }
+.page .sub { font: 18px var(--label); font-variant: small-caps; letter-spacing: .06em; color: #3b3027; }
+.page .line { margin: 6px 0 0; font-style: italic; }
+.page .said { margin: 0; font-style: italic; }
+.page .asp { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.page .asp .chip, .toast .chip { width: 42px; height: 14px; }
+.page .n, .toast .n { font: 18px var(--label); letter-spacing: .1em; }
+.page .end .title { font: 600 30px/1.2 var(--display); margin-bottom: 8px; }
+.page .end .line { font-size: 22px; }
+.page .ears { height: 28px; }
+.toast .nm { font: 600 19px var(--display); margin-right: 10px; }
+.toast .sub { font: 16px var(--label); font-variant: small-caps; margin-right: 10px; }
+.toast .asp { display: inline-flex; gap: 8px; align-items: center; vertical-align: -2px; }
+
 /* the flame breathes in two irregular frames; nothing else moves on its own */
 .flame { transform-origin: 50% 100%; animation: breathe 1.3s steps(1, end) infinite; }
 .flame.slow { animation-duration: 2.1s; }

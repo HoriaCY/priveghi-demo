@@ -11,7 +11,7 @@ async function open(page: Page, size = SIZES[2]) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.setViewportSize(size);
-  await page.goto('./?seed=1');
+  await page.goto('./?seed=1&fixture=start');
   await expect(page.locator('body[data-ready="1"]')).toBeAttached();
   return errors;
 }
@@ -77,6 +77,8 @@ for (const size of SIZES) {
     await expect(page.locator('body')).toHaveAttribute('data-phase', 'ended');
     await expect(page.locator('body')).toHaveAttribute('data-ending', 'pomelnic');
     await expect(page.locator('.mark[data-soroc="9"]')).toHaveAttribute('data-state', 'held');
+    await expect(page.locator('.page .end .title')).toHaveText('Pomelnic');
+    await expect(page.locator('.page .end .line')).toHaveText('S-a ținut priveghiul.');
     await expect(page.locator('.wreath')).toBeHidden();
     expect(errors).toEqual([]);
     await page.screenshot({ path: `docs/shots/step-4/kept-${size.width}x${size.height}.png` });

@@ -19,7 +19,7 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
             closing: false,
         },
         config,
-        phase: Phase::Wake,
+        phase: Phase::Boot,
         day: 1,
         cards: Vec::new(),
         runs: BTreeMap::new(),
@@ -32,6 +32,9 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         frant: false,
         offered: Vec::new(),
         marks: Vec::new(),
+        start_wax: wax,
+        wakes: 1,
+        silence_spent: false,
         ending: None,
         next_id: 1,
         rev: 0,
@@ -43,6 +46,8 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
             add(&mut s, *kind, at);
         }
     }
+    // the one card the dark shows: a candle on the troita's sill (brief §3.1)
+    add(&mut s, Kind::Lumanare, Loc::Sill);
     s
 }
 
@@ -59,7 +64,15 @@ const START: &[(Kind, u8)] = &[
 
 pub fn step(state: &State, action: Action, now_ms: u64, rng: &mut Rng) -> Result<State, Refusal> {
     let mut s = state.clone();
+    if s.phase == Phase::Boot {
+        let changed = boot(&mut s, action, now_ms)?;
+        if changed {
+            s.rev += 1;
+        }
+        return Ok(s);
+    }
     let changed = match action {
+        Action::Again => again(&mut s, now_ms)?,
         Action::Tick => tick(&mut s, now_ms, rng),
         Action::CloseDay => {
             awake(&s)?;
@@ -82,6 +95,54 @@ pub fn step(state: &State, action: Action, now_ms: u64, rng: &mut Rng) -> Result
         s.rev += 1;
     }
     Ok(s)
+}
+
+// ---------------------------------------------------------------- the boot, and another wake
+
+/// In the dark only the candle on the sill moves: placed into the troita it becomes the table candle
+/// and the wake begins (brief §3.1). Time does not pass in the dark.
+fn boot(s: &mut State, action: Action, now: u64) -> Result<bool, Refusal> {
+    match action {
+        Action::Tick | Action::Pause | Action::Resume => Ok(false),
+        Action::Place { cards, target: Target::Niche(Niche::Troita) } => {
+            let candle: Vec<u32> = s
+                .cards
+                .iter()
+                .filter(|c| c.at == Loc::Sill && c.kind == Kind::Lumanare)
+                .map(|c| c.id)
+                .collect();
+            if cards.is_empty() || cards != candle {
+                return Err(Refusal::NotNow);
+            }
+            remove(s, candle[0]);
+            s.phase = Phase::Wake;
+            s.clock = Clock {
+                day_ends_at: now + s.config.zi_ms,
+                paused_left: None,
+                precued: false,
+                closing: false,
+            };
+            log(s, Event::Kindled);
+            Ok(true)
+        }
+        _ => Err(Refusal::NotNow),
+    }
+}
+
+/// After the Bride: another wake, in the dark again, its candle one notch lower, never at nothing
+/// (brief §3.7; RULINGS R36). The dice run on.
+fn again(s: &mut State, now: u64) -> Result<bool, Refusal> {
+    if s.phase != Phase::Ended || s.ending != Some(Ending::Cununie) {
+        return Err(Refusal::NotNow);
+    }
+    let start = s.start_wax.saturating_sub(1).max(1);
+    let mut next = new_state(s.config.clone(), now);
+    next.start_wax = start;
+    next.wax = start;
+    next.wakes = s.wakes + 1;
+    next.rev = s.rev;
+    *s = next;
+    Ok(true)
 }
 
 // ---------------------------------------------------------------- the clock
@@ -443,6 +504,11 @@ fn decay(s: &mut State) {
             remove(s, card);
             let jale = add(s, Kind::Jale, Loc::Table);
             log(s, Event::Rotted { card, jale });
+            // the one great silence: a thread lost while broken, once a run (brief §3.7)
+            if s.frant && !s.silence_spent {
+                s.silence_spent = true;
+                log(s, Event::Silence);
+            }
         }
     }
 }

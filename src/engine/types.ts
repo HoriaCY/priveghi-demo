@@ -28,7 +28,7 @@ export interface Run { recipe: Recipe; days: number; days_left: number; started:
 
 export interface Clock { day_ends_at: number; paused_left: number | null; precued: boolean; closing: boolean }
 
-export type Phase = 'wake' | 'ended';
+export type Phase = 'boot' | 'wake' | 'ended';
 
 export type Ending = 'pomelnic' | 'cununie';
 
@@ -59,7 +59,9 @@ export type Event =
   | { event: 'offered'; soroc: number }
   | { event: 'mark_held'; soroc: number }
   | { event: 'mark_missed'; soroc: number }
-  | { event: 'left'; card: number; kind: Kind };
+  | { event: 'left'; card: number; kind: Kind }
+  | { event: 'kindled' }
+  | { event: 'silence' };
 
 export interface Mark { day: number; held: boolean }
 
@@ -90,6 +92,9 @@ export interface State {
   frant: boolean;
   offered: number[];
   marks: Mark[];
+  start_wax: number;
+  wakes: number;
+  silence_spent: boolean;
   ending: Ending | null;
   next_id: number;
   rev: number;
@@ -103,7 +108,8 @@ export type Action =
   | { type: 'close_day' }
   | { type: 'tap'; on: 'flame' }
   | { type: 'pause' }
-  | { type: 'resume' };
+  | { type: 'resume' }
+  | { type: 'again' };
 
 export type Refusal = 'not_now' | 'no_such_card' | 'fixed' | 'busy' | 'does_not_fit' | 'locked' | 'nothing';
 

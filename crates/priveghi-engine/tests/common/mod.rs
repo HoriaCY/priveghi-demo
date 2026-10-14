@@ -41,8 +41,27 @@ pub fn cfg_long() -> Config {
     Config { zile: 30, jale_frant: u8::MAX, kit_wax: u8::MAX, peddler_return_day: 0, ..cfg() }
 }
 
+/// A wake begun: the boot candle lit at the troita at T0, day 1 running.
+pub fn begin(config: Config, seed: u64) -> Game {
+    let mut g = Game::with_config(config, seed, T0);
+    kindle(&mut g);
+    g
+}
+
 pub fn game() -> Game {
-    Game::with_config(cfg(), 7, T0)
+    begin(cfg(), 7)
+}
+
+/// The boot: the one candle on the troita's sill, placed into the troita.
+pub fn kindle(g: &mut Game) {
+    let candle: Vec<u32> = g
+        .state
+        .cards
+        .iter()
+        .filter(|c| c.at == Loc::Sill && c.kind == Kind::Lumanare)
+        .map(|c| c.id)
+        .collect();
+    g.apply(Action::Place { cards: candle, target: Target::Niche(Niche::Troita) }, T0).unwrap();
 }
 
 pub fn on_table(g: &Game, kind: Kind) -> Vec<u32> {

@@ -11,7 +11,7 @@ async function open(page: Page, query: string, size = SIZES[2]) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.setViewportSize(size);
-  await page.goto(`./?seed=1&${query}`);
+  await page.goto(`./?seed=1&${query.includes('fixture=') ? '' : 'fixture=start&'}${query}`);
   // polled from the test runner, so it works under a fake page clock too
   await expect(page.locator('body[data-ready="1"]')).toBeAttached();
   return errors;
