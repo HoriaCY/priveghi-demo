@@ -14,7 +14,7 @@ async function open(page: Page, query: string, size: { width: number; height: nu
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('request', (r) => origins.add(new URL(r.url()).origin));
   await page.setViewportSize(size);
-  await page.goto(`./?seed=1&${query}`);
+  await page.goto(`./?seed=1&${query.includes('fixture=') ? '' : 'fixture=start&'}${query}`);
   await page.waitForFunction(() => document.body.dataset.ready === '1');
   return { errors, origins };
 }
@@ -24,7 +24,7 @@ const overflowing = (page: Page) =>
   page.evaluate(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    return [...document.querySelectorAll('#stage *')]
+    return [...document.querySelectorAll('#stage *, .page, .page *')]
       .filter((e) => {
         const r = e.getBoundingClientRect();
         return r.width > 0 && r.height > 0 && (r.left < -1 || r.right > vw + 1 || r.top < -1 || r.bottom > vh + 1);

@@ -116,7 +116,7 @@ fn the_first_four_wanders_in_codrii_follow_the_brief() {
 #[test]
 fn late_wanders_draw_one_or_two_dor_and_a_cantec_on_every_third() {
     for seed in 1..=20 {
-        let mut g = Game::with_config(cfg_long(), seed, T0);
+        let mut g = begin(cfg_long(), seed);
         for _ in 1..=4 {
             wander(&mut g, false);
         }
@@ -134,7 +134,7 @@ fn late_wanders_draw_one_or_two_dor_and_a_cantec_on_every_third() {
 #[test]
 fn the_seed_decides_the_late_draws() {
     let late = |seed: u64| {
-        let mut g = Game::with_config(cfg_long(), seed, T0);
+        let mut g = begin(cfg_long(), seed);
         for _ in 1..=4 {
             wander(&mut g, false);
         }
@@ -366,7 +366,7 @@ fn a_refused_action_changes_nothing() {
 // ---------------------------------------------------------------- determinism and saves
 
 fn scripted(seed: u64) -> Game {
-    let mut g = Game::with_config(cfg_long(), seed, T0);
+    let mut g = begin(cfg_long(), seed);
     for day in 0..12 {
         wander(&mut g, day % 4 == 0);
         if day == 5 {
@@ -387,7 +387,7 @@ fn the_same_seed_and_the_same_actions_give_the_same_log() {
 
 #[test]
 fn a_saved_game_loads_and_plays_on_identically() {
-    let mut a = Game::with_config(cfg_long(), 5, T0);
+    let mut a = begin(cfg_long(), 5);
     for _ in 0..5 {
         wander(&mut a, false);
     }
@@ -418,7 +418,7 @@ fn through_f64(v: Value) -> Value {
 
 #[test]
 fn a_save_survives_browser_number_precision() {
-    let mut a = Game::with_config(cfg_long(), u64::MAX - 12_345, T0);
+    let mut a = begin(cfg_long(), u64::MAX - 12_345);
     for _ in 0..5 {
         wander(&mut a, false);
     }
@@ -461,7 +461,9 @@ fn listed(e: &Event) {
         | Offered { .. }
         | MarkHeld { .. }
         | MarkMissed { .. }
-        | Left { .. } => {}
+        | Left { .. }
+        | Kindled
+        | Silence => {}
     }
 }
 
@@ -497,6 +499,8 @@ fn every_kind_of_beat_survives_a_save() {
         MarkHeld { soroc: 3 },
         MarkMissed { soroc: 9 },
         Left { card: 10, kind: Kind::Negustor },
+        Kindled,
+        Silence,
     ];
     for event in beats {
         listed(&event);

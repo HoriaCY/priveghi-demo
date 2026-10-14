@@ -87,6 +87,7 @@ export class Table {
       v.setAttribute('role', 'button');
       v.setAttribute('aria-label', LABELS[n.id].ro);
       v.innerHTML = nicheSVG(n.id, n);
+      if (n.id === 'troita') v.dataset.tap = 'troita';
       const taper = el('taper');
       // no English on the table: the gloss waits for localisation (ruled 2026-10-13)
       v.append(taper, el('cord', cordSVG()), el('vname', LABELS[n.id].ro));
@@ -101,6 +102,7 @@ export class Table {
       this.niches.set(n.id, { el: v, heart, side, taper, sig: '' });
     });
     const door = el('darkdoor', darkDoorSVG());
+    door.dataset.tap = 'door';
     at(door, DOOR_X, NICHE.top);
     stage.append(door);
 
@@ -118,6 +120,8 @@ export class Table {
     this.pool = el('pool');
     stage.append(this.pool, el('vignette'));
     this.dayTag = el('daytag');
+    this.dayTag.dataset.tap = 'page';
+    this.dayTag.setAttribute('role', 'button');
     stage.append(this.dayTag);
 
     this.layer = el('cards');
@@ -134,7 +138,11 @@ export class Table {
     this.flame.setAttribute('role', 'button');
     this.flame.setAttribute('aria-label', CANDLE.ro);
     this.flame.tabIndex = 0;
-    stage.append(this.layer, this.wreath, this.flame);
+    // the boot's darkness, over everything but the troita's small pool; it opens when the candle is lit
+    const t = { x: nicheX(0) + NICHE.w / 2, y: NICHE.top + 118 };
+    const night = el('night');
+    night.style.background = `radial-gradient(circle at ${t.x}px ${t.y}px, transparent 0, transparent var(--hole, 0px), rgba(17,14,11,.97) calc(var(--hole, 0px) + 90px))`;
+    stage.append(this.layer, this.wreath, this.flame, night);
   }
 
   render(s: State): void {
@@ -209,6 +217,7 @@ export class Table {
     stack.dataset.kind = g.kind;
     stack.setAttribute('role', 'button');
     stack.tabIndex = 0;
+    stack.dataset.tap = 'card';
     if (g.kind !== 'cel_nenuntit') stack.dataset.drag = 'table';
     stack.innerHTML = `<div class="under u2"></div><div class="under u1"></div><div class="face">${face(`s-${uidOf(g.key)}`, g.kind)}</div><div class="count"></div>`;
     if (g.kind === 'fir_de_dor') stack.querySelector('.face')!.append(el('grains'));
@@ -249,6 +258,9 @@ export class Table {
     // cards placed today can be taken back; a working niche keeps them sealed
     for (const [part, cards] of [[v.heart, heart ? [heart] : []], [v.side, rest]] as const) {
       part.dataset.ids = cards.map((c) => c.id).join(' ');
+      part.dataset.kind = cards[0]?.kind ?? '';
+      if (cards.length) part.dataset.tap = 'card';
+      else delete part.dataset.tap;
       if (cards.length && !run) part.dataset.drag = 'niche';
       else delete part.dataset.drag;
     }
@@ -280,8 +292,14 @@ export class Table {
       slot.dataset.sig = sig;
       slot.innerHTML = c ? face(`tied-${i}`, c.kind) : '';
       slot.dataset.ids = sig;
-      if (c) slot.dataset.drag = 'sill';
-      else delete slot.dataset.drag;
+      slot.dataset.kind = c?.kind ?? '';
+      if (c) {
+        slot.dataset.drag = 'sill';
+        slot.dataset.tap = 'card';
+      } else {
+        delete slot.dataset.drag;
+        delete slot.dataset.tap;
+      }
     });
   }
 

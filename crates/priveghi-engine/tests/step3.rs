@@ -119,7 +119,7 @@ fn a_candle_card_in_the_dish_adds_a_notch_until_the_candle_is_whole() {
 
 #[test]
 fn a_dark_candle_costs_a_pip_at_every_close_and_the_last_pip_brings_the_bride() {
-    let mut g = Game::with_config(Config { kit_wax: 1, ..cfg() }, 7, T0);
+    let mut g = begin(Config { kit_wax: 1, ..cfg() }, 7);
     close(&mut g);
     close(&mut g);
     assert_eq!((g.state.wax, g.state.vigoare), (1, 3));
@@ -136,7 +136,7 @@ fn a_dark_candle_costs_a_pip_at_every_close_and_the_last_pip_brings_the_bride() 
 
 #[test]
 fn feeding_a_dark_candle_relights_it() {
-    let mut g = Game::with_config(Config { kit_wax: 1, ..cfg() }, 7, T0);
+    let mut g = begin(Config { kit_wax: 1, ..cfg() }, 7);
     for _ in 0..3 {
         close(&mut g);
     }
@@ -147,7 +147,7 @@ fn feeding_a_dark_candle_relights_it() {
 
 #[test]
 fn wax_grace_forgives_the_first_dark_closes() {
-    let mut g = Game::with_config(Config { kit_wax: 1, wax_grace: 1, ..cfg() }, 7, T0);
+    let mut g = begin(Config { kit_wax: 1, wax_grace: 1, ..cfg() }, 7);
     for _ in 0..3 {
         close(&mut g);
     }

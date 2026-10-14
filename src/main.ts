@@ -1,10 +1,12 @@
-// The demo: the engine holds the wake; the table draws it; hands send actions; the clock ticks.
+// The demo: the engine holds the wake; the table and the page draw it; hands send actions; the
+// clock ticks; the wake is saved on this device only.
 import './render/style.css';
 import { Wake } from './engine';
-import type { Entry, Target } from './engine';
+import type { Entry, Kind, Target } from './engine';
 import { applyFixture } from './fixtures';
 import { attachInput } from './play/input';
-import { SOUND, unlockAudio } from './render/audio';
+import { Page, type Focus } from './play/page';
+import { SOUND, silence, startAmbience, unlockAudio } from './render/audio';
 import { fitStage } from './render/fit';
 import { rotateSVG } from './render/furniture';
 import { Table } from './render/table';
@@ -13,6 +15,7 @@ import { TUNING } from './tuning';
 
 const params = new URLSearchParams(location.search);
 const seed = Number(params.get('seed') ?? '1') || 1;
+const SAVE_KEY = 'priveghi.v1';
 
 /** The brief's diacritics string in all three faces; mounting it also makes the browser load them. */
 async function loadFaces(): Promise<void> {
@@ -62,6 +65,21 @@ function sound(e: Entry): void {
   }
 }
 
+/** A saved wake on this device, unless `?reset` or a fixture asks for a fresh one. */
+async function openWake(): Promise<Wake> {
+  if (params.has('reset')) localStorage.removeItem(SAVE_KEY);
+  const fixture = params.get('fixture');
+  const saved = fixture ? null : localStorage.getItem(SAVE_KEY);
+  const loaded = saved ? await Wake.load(saved) : null;
+  if (loaded) {
+    loaded.apply({ type: 'resume' }, Date.now());
+    return loaded;
+  }
+  const wake = await Wake.begin(seed, Date.now());
+  if (fixture) applyFixture(wake, fixture);
+  return wake;
+}
+
 async function main(): Promise<void> {
   await loadFaces();
   if (params.has('sheet')) {
@@ -70,47 +88,134 @@ async function main(): Promise<void> {
     document.body.append(cardSheet());
     return;
   }
-  const wake = await Wake.begin(seed, Date.now());
-  applyFixture(wake, params.get('fixture') ?? 'start');
+  const wake = await openWake();
 
   const stage = document.getElementById('stage')!;
   const rotate = document.getElementById('rotate')!;
   rotate.innerHTML = rotateSVG();
   const table = new Table(stage);
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.setAttribute('role', 'status');
-  stage.append(toast);
+  const pageEl = document.createElement('section');
+  pageEl.className = 'page';
+  pageEl.setAttribute('aria-live', 'polite');
+  document.body.append(pageEl);
+  const page = new Page(pageEl);
+  const strip = document.createElement('div');
+  strip.className = 'toast';
+  strip.setAttribute('role', 'status');
+  stage.append(strip);
   if (params.has('annotate')) annotate(stage);
 
-  let toastTimer = 0;
-  const say = (line: string) => {
-    toast.textContent = line;
-    toast.classList.add('show');
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => toast.classList.remove('show'), TUNING.toast_ms);
+  let stripTimer = 0;
+  let stripFocus = '';
+  const say = (html: string, ms: number = TUNING.toast_ms, focus = '') => {
+    strip.innerHTML = html;
+    strip.classList.add('show');
+    stripFocus = focus;
+    window.clearTimeout(stripTimer);
+    stripTimer = window.setTimeout(() => {
+      strip.classList.remove('show');
+      stripFocus = '';
+    }, ms);
   };
+  const text = (line: string) => line.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // a review fixture never touches the wake saved on this device
+  const persist = !params.get('fixture');
+  const save = () => {
+    if (!persist) return;
+    const now = Date.now();
+    const paused = wake.state().clock.paused_left !== null;
+    if (!paused) wake.apply({ type: 'pause' }, now);
+    localStorage.setItem(SAVE_KEY, wake.save());
+    if (!paused) wake.apply({ type: 'resume' }, now);
+  };
+
+  // the boot: a dark frame until the first touch, then the match, the troita's flame, the candle on its sill
+  let lit = wake.state().phase !== 'boot';
+  const strike = () => {
+    if (lit) return;
+    lit = true;
+    unlockAudio();
+    SOUND.match();
+    window.setTimeout(() => stage.classList.remove('dark0'), 280);
+  };
+
   let seen = wake.state().log.length;
   let clock = 0;
-  const refresh = () => {
-    const s = wake.state();
-    const fresh = s.log.slice(seen);
-    seen = s.log.length;
-    table.render(s);
-    fresh.forEach(sound);
-    // the dark door's answer, on a paper strip until the page arrives (step 5)
-    if (fresh.some((e) => e.event === 'door_answered')) say(LINES.deadLeave.ro);
-    if (s.phase === 'ended') window.clearInterval(clock);
-    document.body.dataset.day = String(s.day);
-    document.body.dataset.phase = s.phase;
-    document.body.dataset.wax = String(s.wax);
-    document.body.dataset.ending = s.ending ?? '';
-  };
   const act = (a: Parameters<Wake['apply']>[0]) => {
     const answer = wake.apply(a, Date.now());
     if (answer.ok && answer.changed) refresh();
     return answer.ok;
   };
+  const startClock = () => {
+    window.clearInterval(clock);
+    if (!params.has('still')) clock = window.setInterval(() => act({ type: 'tick' }), TUNING.tick_ms);
+  };
+  function refresh(): void {
+    const s = wake.state();
+    const fresh = s.log.slice(seen);
+    seen = s.log.length;
+    stage.classList.toggle('booting', s.phase === 'boot');
+    stage.classList.toggle('dark0', s.phase === 'boot' && !lit);
+    stage.classList.toggle('bride', s.phase === 'ended' && s.ending === 'cununie');
+    for (const e of fresh) {
+      sound(e);
+      if (e.event === 'kindled') {
+        // thread, the toaca, the chime; the candle becomes the table's; the pool opens over 1.8 s
+        SOUND.thread();
+        window.setTimeout(() => SOUND.toaca(), 250);
+        window.setTimeout(() => SOUND.chime(), TUNING.pool_open_ms);
+        window.setTimeout(startAmbience, TUNING.pool_open_ms);
+      }
+      if (e.event === 'door_answered') {
+        page.say(LINES.deadLeave.ro);
+        say(`<span>${text(LINES.deadLeave.ro)}</span>`);
+      }
+      if (e.event === 'silence') {
+        silence(TUNING.silence_s);
+        page.say(LINES.sabbathWater.ro);
+        say(`<span>${text(LINES.sabbathWater.ro)}</span>`, TUNING.silence_s * 1000);
+      }
+      if (e.event === 'ended') {
+        SOUND.ison();
+        if (e.ending === 'pomelnic') window.setTimeout(() => SOUND.toaca(), 2500);
+        pageEl.classList.add('open');
+      }
+    }
+    table.render(s);
+    page.render(s);
+    if (fresh.some((e) => ['day_closed', 'kindled', 'ended'].includes(e.event))) save();
+    if (s.phase === 'ended') window.clearInterval(clock);
+    document.body.dataset.day = String(s.day);
+    document.body.dataset.phase = s.phase;
+    document.body.dataset.wax = String(s.wax);
+    document.body.dataset.ending = s.ending ?? '';
+  }
+
+  /** The Bride's page, tapped: LINES.notYet, then another wake, in the dark again, with one less wax. */
+  let refusing = false;
+  const notYet = () => {
+    const s = wake.state();
+    if (s.phase !== 'ended' || s.ending !== 'cununie' || refusing) return;
+    refusing = true;
+    page.notYet = true;
+    page.render(s);
+    window.setTimeout(() => {
+      page.notYet = false;
+      refusing = false;
+      pageEl.classList.remove('open');
+      act({ type: 'again' });
+      startClock();
+    }, TUNING.not_yet_ms);
+  };
+
+  const focusOf = (el: HTMLElement): Focus => {
+    const tap = el.dataset.tap;
+    if (tap === 'troita' || tap === 'door') return { place: tap };
+    const kind = el.dataset.kind as Kind | undefined;
+    const ids = (el.dataset.ids ?? '').split(' ').filter(Boolean).map(Number);
+    return kind ? { kind, ids } : null;
+  };
+
   attachInput(stage, table, {
     probe: (ids: number[], target: Target) => wake.probe({ type: 'place', cards: ids, target }, Date.now()).ok,
     place: (ids: number[], target: Target) => act({ type: 'place', cards: ids, target }),
@@ -119,19 +224,52 @@ async function main(): Promise<void> {
     lifted: () => SOUND.tick(1.1),
     refused: () => {
       SOUND.tick(0.8);
-      say(LINES.doesNotFit.ro);
+      say(`<span>${text(LINES.doesNotFit.ro)}</span>`);
+    },
+    tap: (el: HTMLElement, long: boolean) => {
+      if (wake.state().phase === 'ended') return notYet();
+      if (el.dataset.tap === 'page') {
+        pageEl.classList.toggle('open');
+        return;
+      }
+      const f = focusOf(el);
+      if (!f) return;
+      const key = JSON.stringify(f);
+      const second = stripFocus === key;
+      page.say(null);
+      page.setFocus(f);
+      const s = wake.state();
+      page.render(s);
+      // a tap shows the strip; a second tap, or a hold, opens the page (on a phone it is folded away)
+      if (second || long) pageEl.classList.add('open');
+      const html = page.strip(s, f);
+      if (html) say(html, TUNING.toast_ms, key);
+      SOUND.page();
     },
   });
-  // the first touch opens the sound (iOS needs a gesture)
-  stage.addEventListener('pointerdown', unlockAudio, { capture: true });
-  stage.addEventListener('keydown', unlockAudio, { capture: true });
-  // the clock runs only while someone is at the table
-  document.addEventListener('visibilitychange', () => act({ type: document.hidden ? 'pause' : 'resume' }));
+  // the first touch opens the sound (iOS needs a gesture) and, in the dark, strikes the match
+  const firstTouch = () => {
+    unlockAudio();
+    if (wake.state().phase === 'boot') strike();
+  };
+  stage.addEventListener('pointerdown', firstTouch, { capture: true });
+  stage.addEventListener('keydown', firstTouch, { capture: true });
+  pageEl.addEventListener('pointerdown', () => {
+    unlockAudio();
+    if (wake.state().phase === 'ended') return notYet();
+    if (document.body.dataset.composition === 'phone') pageEl.classList.remove('open');
+  });
+  // the clock runs only while someone is at the table; leaving saves the wake
+  document.addEventListener('visibilitychange', () => {
+    act({ type: document.hidden ? 'pause' : 'resume' });
+    if (document.hidden) save();
+  });
 
   refresh();
-  if (!params.has('still')) clock = window.setInterval(() => act({ type: 'tick' }), TUNING.tick_ms);
+  startClock();
+  if (wake.state().phase === 'ended') pageEl.classList.add('open');
 
-  const fit = () => fitStage(stage, rotate);
+  const fit = () => fitStage(stage, pageEl, rotate);
   fit();
   window.addEventListener('resize', fit);
   window.visualViewport?.addEventListener('resize', fit);

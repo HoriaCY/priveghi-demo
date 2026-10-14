@@ -143,6 +143,8 @@ pub struct Clock {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
+    /// The dark before the wake: one candle waits on the troita's sill.
+    Boot,
     Wake,
     Ended,
 }
@@ -243,6 +245,10 @@ pub enum Event {
         card: u32,
         kind: Kind,
     },
+    /// The boot candle was lit at the troita: the wake begins.
+    Kindled,
+    /// A Fir de dor rotted while the watcher was broken: the one great silence of a run.
+    Silence,
 }
 
 /// One of Cel Nenuntit's memorial days, kept or not.
@@ -283,6 +289,11 @@ pub struct State {
     /// Days on which coliva was laid on Cel Nenuntit.
     pub offered: Vec<u8>,
     pub marks: Vec<Mark>,
+    /// The candle's height when this wake began; each wake after the Bride begins one lower.
+    pub start_wax: u8,
+    /// Which wake this is, counting from one.
+    pub wakes: u8,
+    pub silence_spent: bool,
     pub ending: Option<Ending>,
     pub next_id: u32,
     /// Bumped on every change, so a renderer can skip frames where nothing happened.
@@ -314,6 +325,8 @@ pub enum Action {
     },
     Pause,
     Resume,
+    /// After the Bride ("Nu inca"): another wake, with one less wax.
+    Again,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
