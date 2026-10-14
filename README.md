@@ -86,6 +86,20 @@ Every push to `main` runs all of it in GitHub Actions and deploys `dist/` to Pag
 Review views: `?fixture=start|wake|frant|broken`, `?still` (the clock stops), `?annotate`,
 `?typetest`, `?sheet` (every card face), `?icon`.
 
+## Turning over to the dead's wake
+
+The fiction turned over on 2026-10-13: the player is the dead, Cel Nenuntit at his own wake
+(`SYSTEMS_v3_MORTUL.md` and its addendum, in the loki repository). The turnover is built one
+step at a time; the site above still plays the watcher's wake until the renderer follows.
+
+- **Step 1 (done):** the dead's engine, `crates/priveghi-engine/src/v3/` — Dor by sender and kind,
+  the house's things with their affinities and owners, the living who come to the table, Uitare,
+  Spaimă, Putere, the plays' grades, the close in the chapter's order, the soroace, the burial, the
+  priest, the Hunter, the five endings. Its integration test plays the chapter's considered dead for
+  nine days and must print, byte for byte, what the chapter's simulator printed
+  (`tests/fixtures/v3_chibzuit_9.txt`). Rulings R48–R56.
+- Steps 2–6: the table, the plays, the dream and the priest, the page, polish — each its own branch.
+
 ## Design
 
 The rules and their numbers come from the demo brief and the systems chapter; every judgment
