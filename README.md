@@ -28,6 +28,29 @@ wheat into colivă. Lay colivă on Cel Nenuntit on days 3 and 9. Feed the candle
 flask at the shrine (ÎNCHINĂ-TE); tie threads on its sill to keep them. Tap a card to read it;
 tap again for the page.
 
+## A winning wake
+
+The game has no instructions; this route keeps both marks (the browser check `loop.spec.ts` plays
+exactly it). Tap the flame to end a day early.
+
+1. Day 1: Grâu into GĂZDUIEȘTE (makes colivă), Codrii Vlăsiei into UMBLĂ.
+2. Day 2: wander.
+3. Day 3: Colivă onto Cel Nenuntit (the plank, far left); wander.
+4. Day 4: wander; the fourth wander brings the peddler.
+5. Day 5: Negustor and Fier de baltă into GĂZDUIEȘTE.
+6. Day 6: Grâu into GĂZDUIEȘTE (the colivă for day 9). Days 7 and 8: end the day.
+7. Day 9: Colivă onto Cel Nenuntit, end the day: the Pomelnic.
+
+Tap the flame nine times with nothing placed and the Bride comes instead.
+
+## Checked, and not
+
+Checked: the rules (`cargo test`), the browser flows at 844×390, 1024×768 and 1280×720 with a
+mouse (`npx playwright test`), and the deployed site (`npm run test:live`). Not checked: any real
+phone or touch screen. On a phone, look for: dragging moves cards and not the page; sound starts
+after the first touch; the home-screen copy opens full screen; nothing sits under the notch or the
+home bar; leaving and returning resumes the wake.
+
 ## What is on the table
 
 The numbers match [docs/shots/step-2/annotated-1280x720.png](docs/shots/step-2/annotated-1280x720.png)
