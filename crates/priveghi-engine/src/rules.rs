@@ -293,8 +293,8 @@ fn commit(s: &mut State) {
         let inside: Vec<Kind> = ids.iter().map(|id| kind_of(s, *id)).collect();
         match recipe_of(niche, &inside, &s.config) {
             Some(recipe) => {
-                let days_left = duration(recipe, &s.config);
-                s.runs.insert(niche, Run { recipe, days_left, started: s.day });
+                let days = duration(recipe, &s.config);
+                s.runs.insert(niche, Run { recipe, days, days_left: days, started: s.day });
                 log(s, Event::Started { niche, recipe });
             }
             None => {

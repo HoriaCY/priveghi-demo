@@ -1,12 +1,13 @@
-# Rulings — provisional, awaiting the director
+# Rulings
 
 Judgment calls made while building, each with its source and the alternative. Every one is a
-one-line change. Sources: the demo brief (`PRIVEGHI_DEMO_BRIEF.md`), the systems chapter
+one-line change. **R1–R18 were ruled by the director on 2026-10-13**: accepted as written, except
+R14 (changed), with R19–R23 added from the same answers. Later rows are provisional until ruled. Sources: the demo brief (`PRIVEGHI_DEMO_BRIEF.md`), the systems chapter
 (`SYSTEMS_v2_1.md`), and the build rule that the chapter's numbers win where the two overlap.
 
 | # | Ruling | Source | Alternative |
 |---|---|---|---|
-| R1 | A day lasts 60 s (`zi_ms`). | Chapter §3 `zi_s` 60, over the brief's 45 (numbers come from the chapter). Nine untouched days take 9 min; the 6–8 min run relies on tapping the flame. | 45 s: one line in `config.rs`. |
+| R1 | A day lasts 60 s (`zi_ms`). **Ruled 2026-10-13.** | Chapter §3 `zi_s` 60, over the brief's 45 (numbers come from the chapter). Nine untouched days take 9 min; the 6–8 min run relies on tapping the flame. | 45 s: one line in `config.rs`. |
 | R2 | The close resolves in the brief's order: commits, then decays, then verbs in slot order. A Fir de dor that rots at the close a Jale sitting resolves is mourned with the rest. | Brief §3.6 (the demo's published order); the chapter's order runs mourning before rot. | The chapter's order: that Jale stays. |
 | R3 | Cards placed during a day can be taken back until the close; at the close a niche that cannot start gives its cards back, and they decay like any loose card. | Chapter §3, "commits are sealed until the close". | Start a verb the moment its slots fill. |
 | R4 | A candle burnt in Umblă "adds a draw" = one more Fir de dor. | Brief §3.5 reads Binecuvântare's extra draw as "+1 Fir de dor". | Draw the next entry of the pool. |
@@ -14,3 +15,18 @@ one-line change. Sources: the demo brief (`PRIVEGHI_DEMO_BRIEF.md`), the systems
 | R6 | Bocește takes its cards in any order: Rada, then three to six Fir de dor or one Jale; one Jale card stands for all Jale. Dropping a stack places as many as fit. | Brief §3.3 ("Rada → Fir de dor ×3 (up to 6), or Jale"). | Strict order: Rada first. |
 | R7 | The wake starts with Rada, Codrii Vlăsiei, Ploscă cu apă vie, Lumânare de ceară ×5, Grâu, Sare, and Cel Nenuntit on the plank; no Fir de dor. | Brief §3.4 (the kit's five candles); chapter §6.5 (one Grâu) and its simulation (one Sare, no Dor). | Start with a Fir de dor, as the prototype shows. |
 | R8 | A long gap between clock ticks with no pause closes one day, and the next day starts at that close. | Brief §2.1, "no wall-clock decay". | — |
+| R9 | The prototype's bands stay (far dark, the screen of verbs, the cloth). On the cloth: the plank at the far left with Cel Nenuntit; a kit-and-road row (places, objects) nearer the niches; a cloth row (people, Fir de dor by grains, knowledge, Colivă nearest the plank) nearer the hand; Jale in the bottom-right corner; the candle with its dish and the LUMÂNARE label beside bread and salt. A full row overlaps its cards like a spread hand. | Chapter §2's three zones folded onto the prototype's cloth band. | A literal road row above the cloth, which would shrink the screen of verbs. |
+| R10 | A niche draws the cards it holds above the vignette, as the prototype does: its heart (Rada in Bocește, the place in Umblă) full size in the seat, the rest as a small tagged stack in the seat's top-right corner. | Prototype (cards placed in a niche stay above the vignette). | The rest fanned behind the heart. |
+| R11 | Hems the brief does not name: Lumânare de ceară and Binecuvântare the cross (the blessed); Sare the eight-point star (the protected); Fier de baltă the wolf-tooth (the road); Jale the meander in dimmed wax on a soot ground (the dor it was). Codrii Vlăsiei's wolf-tooth stays at the hem, as in the prototype. | Motif rack meanings (motif_sourcebook §8). | Any other rack motif. |
+| R12 | Six cards had no prototype art and are drawn in its grammar: Cel Nenuntit (the shroud from the waist down, the upper body left undrawn as chapter §1 requires), Lumânare de ceară (an unlit taper), Fier de baltă (a rusted lump among reeds), Colivă (wheat under sugar, a cross, a small candle, a wooden dish), Jale (a bare stalk bent head-down, its grains fallen, on a dark card), Binecuvântare (the six-petal rosette on flat gold). The troiță niche holds an icon on flat gold, a figure you cannot read, and a votive flame. | Brief §3.1 ("the icon on gold") and §3.4; the prototype's card grammar. | — |
+| R13 | Bread and salt's shadow falls away from the flame. | Brief §8: the one wrong thing is the peddler's ox, never bread and salt; the prototype leaned this shadow toward the flame. | — |
+| R14 | The niche labels show the Romanian name only; the prototype's English gloss is gone from the table. Localisation comes after the demo. **Ruled 2026-10-13.** | Director. | The prototype's small gloss. |
+| R15 | A card name too long for one line breaks before its preposition: Ploscă / cu apă vie, Lumânare / de ceară, Cântec / de leagăn. | Typography; the prototype broke at 15 characters (Ploscă cu apă / vie). | The prototype's break. |
+| R16 | Phone scale follows the brief's `min(100vw/1280, 100vh/720)`: at 844×390 the height binds, scale 0.54, cards about 58×82 CSS px (not the ≈71×100 that §3.2 estimates from the width alone). Card names are then about 6 px; the tap strip (step 5) carries them. | Brief §4. | Crop the far side on phones to win height. |
+| R17 | The prototype's wall shading and vignette stay, read as the light pool's falloff: all three only darken toward soot. | Brief §8, "the only gradient is the light pool and it only darkens toward soot". | Drop the wall shading and vignette. |
+| R18 | Cel Nenuntit's fir hem is the only fir among the cards; the cloth keeps the prototype's fir border. | Brief §3.4 ("the only fir on the table") read as the cards. | Plain cloth border. |
+| R19 | Wax: the table candle starts at 5 (`kit_wax`) and burns one at closes 3, 6 and 9, ending at 2 with the light pool at its 40 % floor. The five Lumânare de ceară cards feed the dish (+1) or buy an extra Fir de dor on a wander. A hands-off run plays all nine days. **Ruled 2026-10-13.** | Chapter §6.4 numbers; brief §3.3 dish. | The boot candle alone, fed from the kit. |
+| R20 | Negustor arrives with the fourth wander and again on day 7, and stays two days each time. **Ruled 2026-10-13.** | Brief §3.5; the chapter's 5/14/23/32 is the forty-day calendar. | Day 5 only. |
+| R21 | Resting does not reset a place's draws: the first sequence plays once. **Ruled 2026-10-13.** | Chapter v2.1 correction 5b, over the brief's "place pools refresh". | Rest replays wanders 1–4. |
+| R22 | Under Frânt only the niches lock, all but Bocește, Găzduiește and the troiță. The candle dish and the colivă offering stay open. **Ruled 2026-10-13.** | Brief §3.6. | The chapter's "only Bocește, Închină-te, Găzduiește work". |
+| R23 | The code carries no licence: all rights reserved. **Ruled 2026-10-13.** | Director. | MIT. |

@@ -319,6 +319,8 @@ fn a_dor_sitting_runs_two_days_then_consumes_the_dor_and_lights_a_pip() {
     place(&mut g, Kind::FirDeDor, 3, Niche::Boci).unwrap();
     place(&mut g, Kind::Rada, 1, Niche::Boci).unwrap();
     close(&mut g); // day 3: the sitting starts
+    let run = g.state.runs[&Niche::Boci];
+    assert_eq!((run.days, run.days_left), (2, 1));
     assert_eq!(
         in_niche(&g, Niche::Boci),
         sorted(vec![Kind::Rada, Kind::FirDeDor, Kind::FirDeDor, Kind::FirDeDor])

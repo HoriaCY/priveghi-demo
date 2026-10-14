@@ -10,7 +10,9 @@
     "preview": "vite preview --port 4173 --strictPort",
     "test:rules": "cargo test",
     "test:e2e": "playwright test",
-    "check:privacy": "node scripts/privacy-check.mjs"
+    "check:privacy": "node scripts/privacy-check.mjs",
+    "check:strings": "node scripts/check-strings.mjs",
+    "check": "npm run check:strings && npm run check:privacy"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",

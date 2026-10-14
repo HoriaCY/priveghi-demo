@@ -1,0 +1,32 @@
+// Named table states for review and screenshots (`?fixture=`). A fixture is only a list of actions;
+// the engine decides what they produce.
+import type { Kind, Niche, Wake } from './engine';
+
+export function applyFixture(wake: Wake, name: string): void {
+  if (name !== 'wake') return;
+  const now = () => Date.now();
+  const onTable = (k: Kind) => wake.state().cards.filter((c) => c.kind === k && c.at === 'table');
+  const place = (cards: number[], niche: Niche) => {
+    const a = wake.apply({ type: 'place', cards, target: { niche } }, now());
+    if (!a.ok) throw new Error(`fixture: ${niche} refused (${a.refusal})`);
+  };
+  const close = () => wake.apply({ type: 'close_day' }, now());
+  const codrii = () => onTable('codrii_vlasiei').map((c) => c.id);
+
+  // days 1-3: three wanders, the first by the light of a candle
+  place(codrii(), 'umbla');
+  place(onTable('lumanare').slice(0, 1).map((c) => c.id), 'umbla');
+  close();
+  place(codrii(), 'umbla');
+  close();
+  place(codrii(), 'umbla');
+  close();
+  // day 4: Rada sings two of the oldest threads and one of day 2's; the third oldest is left to rot
+  const dor = onTable('fir_de_dor').sort((a, b) => a.grains - b.grains || a.id - b.id);
+  place(onTable('rada').map((c) => c.id), 'boci');
+  place([dor[0].id, dor[1].id, dor[3].id], 'boci');
+  place(codrii(), 'umbla');
+  close();
+  // day 5, morning: the sitting is half sung, one Jale in its corner, the peddler at the table
+  place(codrii(), 'umbla');
+}

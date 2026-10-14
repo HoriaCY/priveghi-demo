@@ -97,8 +97,9 @@ const check = (item, ok, detail) => rows.push({ item, ok, detail });
 // 4. no third-party requests (static scan; the browser test records every live request)
 {
   const urls = [];
-  for (const f of shipped) {
-    const body = BINARY.test(f) && !f.endsWith('.wasm') ? '' : text(f);
+  // files a browser acts on; licence texts carry their authors' URLs and request nothing
+  for (const f of shipped.filter((x) => /\.(html|js|css|svg|webmanifest|json|wasm)$/i.test(x))) {
+    const body = text(f);
     for (const m of body.matchAll(/https?:\/\/[^\s"'`)<>]+/g)) {
       if (!/^http:\/\/www\.w3\.org\//.test(m[0])) urls.push(`${f}: ${m[0]}`);
     }
@@ -159,11 +160,12 @@ const check = (item, ok, detail) => rows.push({ item, ok, detail });
 {
   const credits = existsSync(path.join(root, 'CREDITS.md')) ? text('CREDITS.md') : '';
   const assets = tracked.filter((f) => ASSET.test(f));
-  const missing = assets.filter((f) => !credits.includes(f));
+  // a row may name a file, or a folder ending in "/" that covers everything under it
+  const missing = assets.filter((f) => !credits.includes(f) && !f.split('/').slice(0, -1).some((_, i, parts) => credits.includes(parts.slice(0, i + 1).join('/') + '/')));
   check(
     'no purchased assets; every asset credited',
     credits.length > 0 && missing.length === 0,
-    !credits ? 'CREDITS.md missing' : missing.length ? 'no credits row: ' + missing.join(' ') : `${assets.length} asset files, each with a CREDITS.md row; all art is code-drawn`,
+    !credits ? 'CREDITS.md missing' : missing.length ? 'no credits row: ' + missing.join(' ') : `${assets.length} asset files, each with a CREDITS.md row; card art is code-drawn`,
   );
 }
 
