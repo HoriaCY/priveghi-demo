@@ -1,7 +1,7 @@
 //! The dead's wake, step 1: the engine reproduces the chapter's reference run. The considered dead
 //! (`chibzuit`) plays nine days against this engine and its summary must equal, byte for byte, what
 //! wake_sim_v3.py printed at the revision stamped in SYSTEMS_v3_MORTUL.md §13 (its md5 begins
-//! 4564652f4f04): tests/fixtures/v3_chibzuit_9.txt, a verbatim copy of the chapter's
+//! eaef47441e3a): tests/fixtures/v3_chibzuit_9.txt, a verbatim copy of the chapter's
 //! design/out/v3_chibzuit_9.txt. Nothing in here is a number copied into prose.
 
 mod v3;

@@ -97,7 +97,7 @@ step at a time; the site above still plays the watcher's wake until the renderer
   Spaimă, Putere, the plays' grades, the close in the chapter's order, the soroace, the burial, the
   priest, the Hunter, the five endings. Its integration test plays the chapter's considered dead for
   nine days and must print, byte for byte, what the chapter's simulator printed
-  (`tests/fixtures/v3_chibzuit_9.txt`). Rulings R48–R56.
+  (`tests/fixtures/v3_chibzuit_9.txt`). Rulings R48–R56; the chapter's rulings of 2026-10-14 (BÂNTUIE for the going verb, the Bride checked before the last day's soroc, three Dor on day one) folded in as R57–R59.
 - Steps 2–6: the table, the plays, the dream and the priest, the page, polish — each its own branch.
 
 ## Design

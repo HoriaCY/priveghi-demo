@@ -33,6 +33,8 @@ pub struct Config {
     /// Forgetting per day, thousandths; Dusman's own. Chapter §4 `forget`, `forget_dusman`.
     pub forget_m: u32,
     pub forget_dusman_m: u32,
+    /// Where each source's accumulator starts, thousandths: primed, so the first longing is on the cloth on day one. Chapter §4 `acc_start`.
+    pub acc_start_m: u32,
     /// Dor per source per day, and per day in all. Chapter §4 `dor_max_src`, `dor_max_day`.
     pub dor_max_src: u32,
     pub dor_max_day: usize,
@@ -123,6 +125,7 @@ impl Default for Config {
             base_m: [450, 350, 300, 350, 200],
             forget_m: 920,
             forget_dusman_m: 750,
+            acc_start_m: 500,
             dor_max_src: 1,
             dor_max_day: 3,
             amintire_rate_m: 100,
