@@ -14,7 +14,8 @@
     "check:strings": "node scripts/check-strings.mjs",
     "check": "npm run check:strings && npm run check:palette && npm run check:privacy",
     "check:palette": "node scripts/check-palette.mjs",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "test:live": "playwright test --config playwright.live.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",

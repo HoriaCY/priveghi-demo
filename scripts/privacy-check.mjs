@@ -47,9 +47,11 @@ const scan = (files, re) => {
 const appCode = tracked.filter((f) => /^(src\/|index\.html$|public\/)/.test(f));
 const shipped = [...appCode, ...dist];
 
-// Personal identifiers of whoever runs this, gathered at run time and never written down.
+// Personal identifiers of whoever runs this, gathered at run time and never written down. On a CI
+// runner the machine's account (`runner`) belongs to no person, so only the generic checks run there.
+const onRunner = Boolean(process.env.GITHUB_ACTIONS);
 const personal = new Set();
-const add = (v) => v && v.length >= 4 && personal.add(v.toLowerCase());
+const add = (v) => !onRunner && v && v.length >= 4 && personal.add(v.toLowerCase());
 add(os.homedir());
 add(os.userInfo().username);
 const gitMail = sh('git', ['config', '--global', 'user.email']);
@@ -144,7 +146,8 @@ const check = (item, ok, detail) => rows.push({ item, ok, detail });
   // Name the files only: this output can land in a public CI log.
   const where = (list, what) => [...new Set(list.map((h) => h.split(':')[0]))].map((f) => `${f} (${what})`);
   const hits = [...where(pathHits, 'local path'), ...where(personHits, 'identifier'), ...where(mails, 'e-mail')];
-  check('no personal data', hits.length === 0, hits.join('; ') || `no local paths, e-mail addresses, or this machine's identifiers (${personal.size} checked)`);
+  const scope = onRunner ? 'on a CI runner: the machine has no personal identifiers' : `this machine's identifiers (${personal.size} checked)`;
+  check('no personal data', hits.length === 0, hits.join('; ') || `no local paths or e-mail addresses; ${scope}`);
 }
 
 // 9. commits authored under the GitHub noreply address
