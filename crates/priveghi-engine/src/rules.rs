@@ -155,6 +155,14 @@ fn awake(s: &State) -> Result<(), Refusal> {
     }
 }
 
+/// Whether a tick at `now` would sound the pre-cue or close the day.
+pub fn tick_due(s: &State, now: u64) -> bool {
+    s.phase == Phase::Wake
+        && s.clock.paused_left.is_none()
+        && ((!s.clock.precued && now + s.config.precue_ms >= s.clock.day_ends_at)
+            || now >= s.clock.day_ends_at)
+}
+
 fn tick(s: &mut State, now: u64, rng: &mut Rng) -> bool {
     if s.phase != Phase::Wake || s.clock.paused_left.is_some() {
         return false;

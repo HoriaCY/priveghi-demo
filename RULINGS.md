@@ -49,3 +49,8 @@ R14 (changed), with R19–R23 added from the same answers. Later rows are provis
 | R40 | A barely audible wind in the spruce plays from the moment the table is lit, so that the one silence has something to remove; nothing else plays continuously. | Brief §3.7 ("ambience removed 6 s"); vibe bible §7. | No ambience: the silence is then only the missing SFX. |
 | R41 | The ison on day nine: a D2 with its octave, held 12 s, bending 40 cents flat once, midway, and back. | Brief §3.7. | — |
 | R42 | The wake is saved, paused, in this device's localStorage at the boot, at every close, at the end, and whenever the tab is hidden. A reload resumes it; `?reset` clears it; review fixtures never read or write it. | Brief §3.6. | — |
+| R43 | A card that moves rests one pixel short of its place, then takes the last pixel after `settle_ms` 360 ms, with no easing past the mark. | Brief §8 ("Cards settle 1 px short, then the last pixel"). | — |
+| R44 | On a phone the page folds over the table's right side (320 reference px) and folds away on a tap; the day tag opens it. The day tag and the sill's cards get invisible tap areas of at least 44 CSS px at the phone's scale. | Brief §3.2 and §4 (44 px hit areas). | — |
+| R45 | The home-screen icon is the troiță niche drawn by the app's own code, photographed at 180 and 512 px; the manifest asks for full screen in landscape. | Brief §4. | — |
+| R46 | A palette guard joins the checks: only the nine anchors and the prototype's neutrals, never `#000`, Voroneț blue on the wreath alone, gold never in a gradient. | Brief §8. | — |
+| R47 | The pre-cue is seen as well as heard: for the last 0.4 s of a day the table candle's flame gutters, low and dim, then the close. | Brief §3.6 ("the candle's flame gutters at T−0.4 s"). | — |

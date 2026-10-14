@@ -17,4 +17,5 @@ export const TUNING = {
   pool_open_ms: 1800, // the light pool opening after the boot (brief §3.1)
   not_yet_ms: 1600, // LINES.notYet stands this long before the next wake
   long_press_ms: 500,
+  settle_ms: 360, // a moved card rests one pixel short this long, then takes the last pixel (brief §8)
 } as const;

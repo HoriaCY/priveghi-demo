@@ -9,6 +9,7 @@ Every file added under an outside licence gets a row here.
 | `src/fonts/AlegreyaSC-Regular.woff2` | google/fonts, `ofl/alegreyasc` (subset) | The Alegreya Project Authors | SIL Open Font License 1.1, `public/fonts/OFL-Alegreya.txt` |
 | `src/fonts/CormorantUnicase-Medium.woff2`, `src/fonts/CormorantUnicase-SemiBold.woff2` | google/fonts, `ofl/cormorantunicase` (subset) | The Cormorant Project Authors | SIL Open Font License 1.1, `public/fonts/OFL-Cormorant.txt` |
 | `docs/shots/` | screenshots of this demo, taken by its browser tests | this repository | as this repository |
+| `public/icon-180.png`, `public/icon-512.png` | the app's own troiță niche (`?icon`), photographed by `scripts/make-icons.mjs` | this repository, code-drawn | as this repository |
 
 The fonts are subset to Latin, Latin-1, Latin Extended-A, U+0218–021B (Ș ș Ț ț with the comma
 below), dashes, quotes and the ellipsis. None of the three licences reserves a font name.

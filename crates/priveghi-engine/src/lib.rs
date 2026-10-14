@@ -39,6 +39,10 @@ impl Game {
 
     /// Applies one action. `Ok(true)` when the state changed; a refusal changes nothing.
     pub fn apply(&mut self, action: Action, now_ms: u64) -> Result<bool, Refusal> {
+        // the renderer ticks ten times a second; most ticks have nothing due and copy nothing
+        if action == Action::Tick && !rules::tick_due(&self.state, now_ms) {
+            return Ok(false);
+        }
         let mut rng = self.rng.clone();
         let next = step(&self.state, action, now_ms, &mut rng)?;
         let changed = next.rev != self.state.rev;

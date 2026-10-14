@@ -82,6 +82,15 @@ async function openWake(): Promise<Wake> {
 
 async function main(): Promise<void> {
   await loadFaces();
+  if (params.has('icon')) {
+    // the home-screen icon: the troita niche on the room's dark (scripts/make-icons.mjs photographs it)
+    const { nicheSVG } = await import('./render/furniture');
+    const icon = document.createElement('div');
+    icon.className = 'icon-mark';
+    icon.innerHTML = nicheSVG('icon', { roof: true, thread: true, icon: true });
+    document.body.append(icon);
+    return;
+  }
   if (params.has('sheet')) {
     // every card face on one page: the wireframe an artist replaces (docs/shots/step-2/cards-sheet.png)
     const { cardSheet } = await import('./render/sheet');
@@ -159,6 +168,7 @@ async function main(): Promise<void> {
     stage.classList.toggle('bride', s.phase === 'ended' && s.ending === 'cununie');
     for (const e of fresh) {
       sound(e);
+      if (e.event === 'precue') table.gutter(s.config.precue_ms);
       if (e.event === 'kindled') {
         // thread, the toaca, the chime; the candle becomes the table's; the pool opens over 1.8 s
         SOUND.thread();
