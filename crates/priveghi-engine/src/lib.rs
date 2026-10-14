@@ -5,6 +5,7 @@ pub mod config;
 pub mod model;
 pub mod rng;
 pub mod rules;
+pub mod v3;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm;

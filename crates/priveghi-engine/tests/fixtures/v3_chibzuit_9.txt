@@ -1,0 +1,5 @@
+=== chibzuit cale=none zile=9 dor_zile=3 putere=4 seed=1 | ending=Nuntă day_ended=9
+uitare peak 0 end 0 (dawns at >=4: 0) | spaima peak 4 end 3 | candle unlit days 0
+dor arrived 20 guttered 0 {'neam': 0, 'dragoste': 0, 'frate': 0, 'vrajba': 0, 'rugaciune': 0} tied 1 loose 6 | amintiri 0/1/2/minune [0, 0, 12, 1] | pomeniri 15 (no-op 15)
+soroace held [3, 9] missed [] | acts 13 plays 13 skipped 0 rested 3 arata 0 walks 6 franturi used 0 putere spent 19 | preot services 0 rides 0 shakes 0
+standing {mama 0.94, draguta 0.59, frate 0.61, dusman 0.36, preot 0.19} | tally {'mama': 9, 'draguta': 6, 'frate': 6, 'dusman': 4, 'preot': 2} | sick {} dead [] | minuni ['neam'] | cloth peak 13 kit peak 8 | dark dawns 0 pomane de vis 0
