@@ -663,6 +663,28 @@ fn the_forecast_is_uitare_plus_the_loose_dor_by_stub() {
     assert_eq!(forecast(&w.state), [0, 3, 5], "day one's three are a day nearer; two more came");
 }
 
+/// There is no dawn beyond the Uitare ending: the forecast stops at the cap.
+#[test]
+fn the_forecast_never_passes_the_cap() {
+    let mut w = wake();
+    for _ in 0..5 {
+        close(&mut w);
+    }
+    let cap = w.state.config.uitare_cap;
+    assert!(w.state.phase == Phase::Wake, "the idle dead lives past day five");
+    assert!(w.state.uitare + 3 > cap || forecast(&w.state).iter().all(|u| *u <= cap));
+    let mut w = wake();
+    for _ in 0..6 {
+        if w.state.phase != Phase::Wake {
+            break;
+        }
+        close(&mut w);
+    }
+    for u in forecast(&w.state) {
+        assert!(u <= cap, "the forecast reads {u}, past the cap {cap}");
+    }
+}
+
 // ---------------------------------------------------------------- Spaima: the priest and the Hunter (§8)
 
 #[test]
@@ -806,4 +828,38 @@ fn the_state_round_trips_through_json_with_its_kinds_tagged() {
     assert!(json.contains("\"kind\":\"lucru\",\"lucru\":\"cana\""));
     let back: State = serde_json::from_str(&json).unwrap();
     assert_eq!(back, w.state);
+}
+
+/// She stands in the door; you would not go: Ratacire, and the next tap begins another wake in the dark.
+#[test]
+fn refusing_the_bride_is_ratacire_and_again_is_another_wake_from_the_dark() {
+    let mut w = begin(Config::default());
+    let mut policy = Chibzuit::new();
+    policy.play(&mut w);
+    assert_eq!(w.state.phase, Phase::Door);
+    assert_eq!(w.apply(Action::Again, 1).unwrap(), true, "in her door, Again is allowed");
+    let mut w2 = begin(Config::default());
+    let mut policy = Chibzuit::new();
+    policy.play(&mut w2);
+    assert_eq!(w2.apply(Action::Ramai, 1), Ok(true));
+    assert_eq!(w2.state.phase, Phase::Ended);
+    assert_eq!(w2.state.ending, Some(Ending::Ratacire));
+    assert!(w2.state.log.iter().any(|e| e.event == Event::Ramai));
+    assert_eq!(w2.apply(Action::Treci, 1), Err(Refusal::NotNow));
+    let rev = w2.state.rev;
+    assert_eq!(w2.apply(Action::Again, 7), Ok(true));
+    assert_eq!(w2.state.phase, Phase::Boot);
+    assert_eq!(w2.state.day, 1);
+    assert_eq!(w2.state.uitare, 0);
+    assert!(w2.state.log.is_empty());
+    assert!(w2.state.rev > rev, "a new wake is a change");
+    assert_eq!(w2.state.clock.day_ends_at, 7 + w2.state.config.zi_ms);
+}
+
+/// Mid-wake, neither leaving nor beginning again is possible: the wake is the only way out.
+#[test]
+fn mid_wake_ramai_and_again_are_not_now() {
+    let mut w = wake();
+    assert_eq!(w.apply(Action::Ramai, by_day(&w)), Err(Refusal::NotNow));
+    assert_eq!(w.apply(Action::Again, by_day(&w)), Err(Refusal::NotNow));
 }

@@ -59,7 +59,7 @@ pub struct Config {
     pub cost_urneste: u8,
     pub cost_sopteste: u8,
     pub cost_arata: u8,
-    pub cost_umbla: u8,
+    pub cost_bantuie: u8,
     pub cost_asculta: u8,
     /// Dreams a night; the match cap on a sleeper dreamed two nights running. Chapter §6 `vis_max`, `vis_repeat_cap`.
     pub vis_max: u8,
@@ -142,7 +142,7 @@ impl Default for Config {
             cost_urneste: 1,
             cost_sopteste: 1,
             cost_arata: 2,
-            cost_umbla: 1,
+            cost_bantuie: 1,
             cost_asculta: 0,
             vis_max: 1,
             vis_repeat_cap: 1,
