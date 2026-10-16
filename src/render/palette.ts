@@ -20,4 +20,5 @@ export const C = {
   room: '#110e0b',
   nicheDark: '#0c0a08',
   bread: '#a3814f',
+  inkDim: '#3b3027', // the prototype's lore ink: the page's small caps
 } as const;

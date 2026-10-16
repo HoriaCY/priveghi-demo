@@ -1,21 +1,28 @@
-// The demo: the engine holds the wake; the table and the page draw it; hands send actions; the
-// clock ticks; the wake is saved on this device only.
+// The demo: the engine holds the dead's wake; the table and the page draw it; hands send actions;
+// the clock ticks; the wake is saved on this device only. Step 2: the table, the clock and taps.
 import './render/style.css';
 import { Wake } from './engine';
-import type { Entry, Kind, Target } from './engine';
-import { applyFixture } from './fixtures';
+import type { Action, Entry, View } from './engine';
+import { applyFixture, isFixture } from './fixtures';
 import { attachInput } from './play/input';
 import { Page, type Focus } from './play/page';
 import { SOUND, silence, startAmbience, unlockAudio } from './render/audio';
 import { fitStage } from './render/fit';
 import { rotateSVG } from './render/furniture';
+import { CANDLE, DOOR_X, FORECAST, PUTERE, ROW_CLOTH, ROW_KIT, STILL_LIFE, TALLY, nicheX } from './render/layout';
 import { Table } from './render/table';
 import { LINES, TYPE_TEST } from './strings';
 import { TUNING } from './tuning';
 
 const params = new URLSearchParams(location.search);
-const seed = Number(params.get('seed') ?? '1') || 1;
-const SAVE_KEY = 'priveghi.v1';
+const SAVE_KEY = 'priveghi.v3';
+
+declare global {
+  interface Window {
+    /** Review mode only (`?fixture=`): the browser tests read the engine's view, so they assert what it says. */
+    priveghi?: { view(): View };
+  }
+}
 
 /** The brief's diacritics string in all three faces; mounting it also makes the browser load them. */
 async function loadFaces(): Promise<void> {
@@ -31,7 +38,20 @@ async function loadFaces(): Promise<void> {
 
 /** Numbered markers for review screenshots; README.md "What is on the table" is the legend. */
 function annotate(stage: HTMLElement): void {
-  const marks: [number, number][] = [[452, 20], [100, 126], [272, 140], [784, 140], [1100, 140], [64, 384], [200, 366], [200, 520], [992, 400], [862, 560], [1084, 510]];
+  const marks: [number, number][] = [
+    [452, 20], // 1 the far seat
+    [nicheX(0) + 6, 126], // 2 ODIHNESTE-TE
+    [nicheX(1) + 6, 126], // 3 the verbs
+    [DOOR_X - 12, 140], // 4 the dark door
+    [64, 384], // 5 the plank with your card
+    [64, TALLY.y - 6], // 6 the tally
+    [64, FORECAST.y], // 7 the forecast
+    [ROW_CLOTH.x - 14, 366], // 8 the cloth row
+    [ROW_KIT.x - 14, 520], // 9 the kit and the road
+    [CANDLE.x - 18, 400], // 10 STINGE
+    [PUTERE.x + 70, PUTERE.y - 6], // 11 Putere
+    [STILL_LIFE.x + 4, STILL_LIFE.y + 4], // 12 bread and salt
+  ];
   marks.forEach(([x, y], i) => {
     const a = document.createElement('div');
     a.className = 'ann';
@@ -42,41 +62,83 @@ function annotate(stage: HTMLElement): void {
   });
 }
 
-/** Material sounds for the beats the engine logged; most losses are quiet by design. */
+/** Material sounds for the beats the engine logged (charter section 6); losses are quiet. */
 function sound(e: Entry): void {
   switch (e.event) {
+    case 'brought_home':
+      SOUND.match();
+      window.setTimeout(() => SOUND.thread(), 250);
+      window.setTimeout(() => SOUND.toaca(), 500);
+      window.setTimeout(() => SOUND.chime(), TUNING.pool_open_ms);
+      return;
     case 'precue':
       return SOUND.tick(0.6);
+    case 'dusk':
+      return SOUND.tick(0.7);
+    case 'stinge':
+      return SOUND.blow();
     case 'day_closed':
       return SOUND.chime();
-    case 'placed':
-      return typeof e.target === 'object' && e.target.niche === 'troita' ? SOUND.toaca() : SOUND.thread();
+    case 'committed':
+    case 'walked':
     case 'tied':
       return SOUND.thread();
-    case 'unplaced':
-      return SOUND.tick(0.9);
-    case 'wax_fed':
-    case 'offered':
+    case 'resolved':
       return SOUND.seal();
-    case 'door_answered':
+    case 'pomenire':
+    case 'priest':
+    case 'listened':
       return SOUND.page();
-    case 'jale_mourned':
-      return SOUND.heldNote();
+    case 'soroc_held':
+    case 'buried':
+    case 'rested':
+      return SOUND.toaca();
+    case 'untied':
+      return SOUND.tick();
+    case 'bride_stands':
+      return SOUND.ison();
+    case 'ended':
+      if (e.ending === 'uitare') silence(TUNING.silence_s);
+      if (e.ending === 'tarus') SOUND.tick(0.5);
+      return;
+    default:
+      return;
+  }
+}
+
+/** A line the table speaks at a beat, from src/strings.ts; most beats are wordless. */
+function line(e: Entry): string | null {
+  switch (e.event) {
+    case 'stinge':
+      return LINES.candleOut.ro;
+    case 'dark_dawn':
+      return LINES.darkDawn.ro;
+    case 'soroc_missed':
+      return LINES.noColiva.ro;
+    case 'priest':
+      return LINES.priest.ro;
+    case 'ended':
+      return e.ending === 'tarus' ? LINES.hunter.ro : null;
+    default:
+      return null;
   }
 }
 
 /** A saved wake on this device, unless `?reset` or a fixture asks for a fresh one. */
-async function openWake(): Promise<Wake> {
+async function openWake(now: number): Promise<Wake> {
   if (params.has('reset')) localStorage.removeItem(SAVE_KEY);
   const fixture = params.get('fixture');
   const saved = fixture ? null : localStorage.getItem(SAVE_KEY);
   const loaded = saved ? await Wake.load(saved) : null;
   if (loaded) {
-    loaded.apply({ type: 'resume' }, Date.now());
+    loaded.apply({ type: 'resume' }, now);
+    if (loaded.state().phase === 'boot') loaded.apply({ type: 'begin' }, now);
     return loaded;
   }
-  const wake = await Wake.begin(seed, Date.now());
-  if (fixture) applyFixture(wake, fixture);
+  const wake = await Wake.begin(now);
+  // until step 5 there is no boot sequence: they bring you home at once
+  if (isFixture(fixture)) applyFixture(wake, fixture, now);
+  else wake.apply({ type: 'begin' }, now);
   return wake;
 }
 
@@ -92,12 +154,13 @@ async function main(): Promise<void> {
     return;
   }
   if (params.has('sheet')) {
-    // every card face on one page: the wireframe an artist replaces (docs/shots/step-2/cards-sheet.png)
+    // every card face on one page: the wireframe an artist replaces
     const { cardSheet } = await import('./render/sheet');
     document.body.append(cardSheet());
     return;
   }
-  const wake = await openWake();
+  const wake = await openWake(Date.now());
+  if (params.has('fixture')) window.priveghi = { view: () => wake.state() };
 
   const stage = document.getElementById('stage')!;
   const rotate = document.getElementById('rotate')!;
@@ -107,7 +170,7 @@ async function main(): Promise<void> {
   pageEl.className = 'page';
   pageEl.setAttribute('aria-live', 'polite');
   document.body.append(pageEl);
-  const page = new Page(pageEl);
+  const page = new Page(pageEl, (dor, on) => wake.matches(dor, on, Date.now()));
   const strip = document.createElement('div');
   strip.className = 'toast';
   strip.setAttribute('role', 'status');
@@ -126,147 +189,133 @@ async function main(): Promise<void> {
       stripFocus = '';
     }, ms);
   };
-  const text = (line: string) => line.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const text = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   // a review fixture never touches the wake saved on this device
   const persist = !params.get('fixture');
   const save = () => {
     if (!persist) return;
     const now = Date.now();
-    const paused = wake.state().clock.paused_left !== null;
+    const paused = wake.state().clock.paused_at !== null;
     if (!paused) wake.apply({ type: 'pause' }, now);
     localStorage.setItem(SAVE_KEY, wake.save());
     if (!paused) wake.apply({ type: 'resume' }, now);
   };
 
-  // the boot: a dark frame until the first touch, then the match, the troita's flame, the candle on its sill
-  let lit = wake.state().phase !== 'boot';
-  const strike = () => {
-    if (lit) return;
-    lit = true;
-    unlockAudio();
-    SOUND.match();
-    window.setTimeout(() => stage.classList.remove('dark0'), 280);
-  };
-
-  let seen = wake.state().log.length;
+  let view: View = wake.state();
+  let seen = view.log.length;
   let clock = 0;
-  const act = (a: Parameters<Wake['apply']>[0]) => {
+  const act = (a: Action) => {
     const answer = wake.apply(a, Date.now());
     if (answer.ok && answer.changed) refresh();
     return answer.ok;
   };
+  /** The clock runs while the wake does: a stopped wake (her door, an ending) is drawn still. */
   const startClock = () => {
     window.clearInterval(clock);
-    if (!params.has('still')) clock = window.setInterval(() => act({ type: 'tick' }), TUNING.tick_ms);
+    if (params.has('still') || view.phase !== 'wake') return;
+    clock = window.setInterval(() => {
+      act({ type: 'tick' });
+      // the candle burns between the engine's beats: a cheap re-render on every tick (R67)
+      table.renderCandle(view, Date.now());
+    }, TUNING.tick_ms);
+  };
+  /** The Dor in hand is told by contour weight on its stack; a Dor that left the cloth leaves the hand. */
+  const select = () => {
+    for (const s of stage.querySelectorAll('.stack.selected')) s.classList.remove('selected');
+    const id = page.inHand;
+    if (id === null) return;
+    const stack = [...stage.querySelectorAll<HTMLElement>('.stack[data-kind="dor"], .cards .tied[data-kind="dor"]')].find((s) => (s.dataset.ids ?? '').split(' ').includes(String(id)));
+    if (stack) stack.classList.add('selected');
+    else page.inHand = null;
   };
   function refresh(): void {
-    const s = wake.state();
-    const fresh = s.log.slice(seen);
-    seen = s.log.length;
-    stage.classList.toggle('booting', s.phase === 'boot');
-    stage.classList.toggle('dark0', s.phase === 'boot' && !lit);
-    stage.classList.toggle('bride', s.phase === 'ended' && s.ending === 'cununie');
+    view = wake.state();
+    const v = view;
+    const fresh = v.log.slice(seen);
+    seen = v.log.length;
+    stage.classList.toggle('booting', v.phase === 'boot');
     for (const e of fresh) {
       sound(e);
-      if (e.event === 'precue') table.gutter(s.config.precue_ms);
-      if (e.event === 'kindled') {
-        // thread, the toaca, the chime; the candle becomes the table's; the pool opens over 1.8 s
-        SOUND.thread();
-        window.setTimeout(() => SOUND.toaca(), 250);
-        window.setTimeout(() => SOUND.chime(), TUNING.pool_open_ms);
-        window.setTimeout(startAmbience, TUNING.pool_open_ms);
+      if (e.event === 'precue') table.gutter(v.config.precue_ms);
+      const said = line(e);
+      if (said) {
+        page.say(said);
+        say(`<span>${text(said)}</span>`);
       }
-      if (e.event === 'door_answered') {
-        page.say(LINES.deadLeave.ro);
-        say(`<span>${text(LINES.deadLeave.ro)}</span>`);
-      }
-      if (e.event === 'silence') {
-        silence(TUNING.silence_s);
-        page.say(LINES.sabbathWater.ro);
-        say(`<span>${text(LINES.sabbathWater.ro)}</span>`, TUNING.silence_s * 1000);
-      }
-      if (e.event === 'ended') {
-        SOUND.ison();
-        if (e.ending === 'pomelnic') window.setTimeout(() => SOUND.toaca(), 2500);
-        pageEl.classList.add('open');
-      }
+      if (e.event === 'ended' || e.event === 'bride_stands') pageEl.classList.add('open');
     }
-    table.render(s);
-    page.render(s);
-    if (fresh.some((e) => ['day_closed', 'kindled', 'ended'].includes(e.event))) save();
-    if (s.phase === 'ended') window.clearInterval(clock);
-    document.body.dataset.day = String(s.day);
-    document.body.dataset.phase = s.phase;
-    document.body.dataset.wax = String(s.wax);
-    document.body.dataset.ending = s.ending ?? '';
+    table.render(v);
+    select();
+    page.render(v);
+    if (fresh.some((e) => ['day_closed', 'ended', 'bride_stands'].includes(e.event))) save();
+    if (v.phase !== 'wake') window.clearInterval(clock);
+    const b = document.body.dataset;
+    b.day = String(v.day);
+    b.phase = v.phase;
+    b.night = v.night ? '1' : '0';
+    b.candle = v.candle ? '1' : '0';
+    b.uitare = String(v.uitare);
+    b.spaima = String(v.spaima);
+    b.putere = String(v.putere);
+    b.ending = v.ending ?? '';
   }
 
-  /** The Bride's page, tapped: LINES.notYet, then another wake, in the dark again, with one less wax. */
-  let refusing = false;
-  const notYet = () => {
-    const s = wake.state();
-    if (s.phase !== 'ended' || s.ending !== 'cununie' || refusing) return;
-    refusing = true;
-    page.notYet = true;
-    page.render(s);
-    window.setTimeout(() => {
-      page.notYet = false;
-      refusing = false;
-      pageEl.classList.remove('open');
-      act({ type: 'again' });
-      startClock();
-    }, TUNING.not_yet_ms);
-  };
-
   const focusOf = (el: HTMLElement): Focus => {
-    const tap = el.dataset.tap;
-    if (tap === 'troita' || tap === 'door') return { place: tap };
-    const kind = el.dataset.kind as Kind | undefined;
+    if (el.dataset.tap === 'tally') return { tally: true };
     const ids = (el.dataset.ids ?? '').split(' ').filter(Boolean).map(Number);
-    return kind ? { kind, ids } : null;
+    return ids.length ? { ids } : null;
   };
 
   attachInput(stage, table, {
-    probe: (ids: number[], target: Target) => wake.probe({ type: 'place', cards: ids, target }, Date.now()).ok,
-    place: (ids: number[], target: Target) => act({ type: 'place', cards: ids, target }),
-    unplace: (ids: number[]) => act({ type: 'unplace', cards: ids }),
-    tapFlame: () => void act({ type: 'tap', on: 'flame' }),
+    // the drags of step 3
+    probe: () => false,
+    place: () => false,
+    unplace: () => false,
+    tapFlame: () => undefined,
     lifted: () => SOUND.tick(1.1),
-    refused: () => {
-      SOUND.tick(0.8);
-      say(`<span>${text(LINES.doesNotFit.ro)}</span>`);
+    refused: () => SOUND.tick(0.8),
+    clear: () => {
+      page.inHand = null;
+      select();
     },
     tap: (el: HTMLElement, long: boolean) => {
-      if (wake.state().phase === 'ended') return notYet();
-      if (el.dataset.tap === 'page') {
+      const kind = el.dataset.tap;
+      if (kind === 'page') {
         pageEl.classList.toggle('open');
         return;
       }
+      // the troita (rest) and the door (TRECI) answer in steps 3 and 4
+      if (kind === 'troita' || kind === 'door') return;
       const f = focusOf(el);
       if (!f) return;
       const key = JSON.stringify(f);
       const second = stripFocus === key;
+      const v = view;
+      if ('ids' in f) {
+        const c = v.cards.find((x) => x.id === f.ids[0]);
+        // a tapped Dor is the Dor in hand until another Dor is tapped, or the bare table
+        if (c?.kind === 'dor' && (c.at === 'cloth' || c.at === 'sill')) page.inHand = c.id;
+      }
+      select();
       page.say(null);
-      page.setFocus(f);
-      const s = wake.state();
-      page.render(s);
+      page.focus = f;
+      page.render(v);
       // a tap shows the strip; a second tap, or a hold, opens the page (on a phone it is folded away)
       if (second || long) pageEl.classList.add('open');
-      const html = page.strip(s, f);
+      const html = page.strip(v, f, page.inHand);
       if (html) say(html, TUNING.toast_ms, key);
       SOUND.page();
     },
   });
-  // the first touch opens the sound (iOS needs a gesture) and, in the dark, strikes the match
+  // the first touch opens the sound (iOS needs a gesture) and lets the wind in
   const firstTouch = () => {
     unlockAudio();
-    if (wake.state().phase === 'boot') strike();
+    startAmbience();
   };
   stage.addEventListener('pointerdown', firstTouch, { capture: true });
   stage.addEventListener('keydown', firstTouch, { capture: true });
   pageEl.addEventListener('pointerdown', () => {
     unlockAudio();
-    if (wake.state().phase === 'ended') return notYet();
     if (document.body.dataset.composition === 'phone') pageEl.classList.remove('open');
   });
   // the clock runs only while someone is at the table; leaving saves the wake
@@ -277,7 +326,7 @@ async function main(): Promise<void> {
 
   refresh();
   startClock();
-  if (wake.state().phase === 'ended') pageEl.classList.add('open');
+  if (view.phase === 'ended' || view.phase === 'door') pageEl.classList.add('open');
 
   const fit = () => fitStage(stage, pageEl, rotate);
   fit();

@@ -1,14 +1,14 @@
-// Hands at the table. Drag a card or a stack onto a niche or the candle's dish; drag a card a niche
-// still holds back onto the cloth; tap the flame to close the day; tap a card for its strip, tap it
-// again or hold it for the page (brief §3.2). The renderer never decides a rule:
-// it asks the engine (probe) before a niche answers by contour weight, and the engine's answer to the
-// drop is final. Keyboard: Enter on a card picks it up, Enter on a niche or the dish puts it down.
-import type { Target } from '../engine';
+// Hands at the table. Step 2: taps only. A press that does not move is a tap; a hold of
+// long_press_ms or more is a long tap (the page). Tap the flame: STINGE (a no-op until step 3).
+// The drags of charter section 4 (a Dor onto a card, a place into BANTUIE, a person into ASCULTA,
+// a Dor onto the sill, your card onto the door) come in step 3; the Hands shape already holds them.
+// The renderer never decides a rule: step 3's probe asks the engine before a target answers.
 import { STAGE } from '../render/layout';
-import type { Table } from '../render/table';
+import type { Table, Target } from '../render/table';
 import { TUNING } from '../tuning';
 
 export interface Hands {
+  /** Would the engine take these cards on this target (a niche answers by contour weight only then)? */
   probe(ids: number[], target: Target): boolean;
   place(ids: number[], target: Target): boolean;
   unplace(ids: number[]): boolean;
@@ -17,82 +17,55 @@ export interface Hands {
   refused(): void;
   /** A tap (or a hold, `long`) on anything carrying data-tap. */
   tap(el: HTMLElement, long: boolean): void;
+  /** Escape, or a press on the bare table: the Dor in hand is put down. */
+  clear(): void;
 }
 
-interface Drag {
+interface Press {
   el: HTMLElement;
-  ids: number[];
-  from: string;
   x0: number;
   y0: number;
-  base: string;
   moved: boolean;
-  over: Target | null;
   t0: number;
 }
 
-const idsOf = (el: HTMLElement) => (el.dataset.ids ?? '').split(' ').filter(Boolean).map(Number);
-const same = (a: Target | null, b: Target | null) => JSON.stringify(a) === JSON.stringify(b);
-
 export function attachInput(stage: HTMLElement, table: Table, hands: Hands): void {
-  let drag: Drag | null = null;
-  let picked: HTMLElement | null = null;
+  let press: Press | null = null;
 
   const toStage = (e: PointerEvent) => {
     const r = stage.getBoundingClientRect();
     const k = r.width / STAGE.w;
     return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k, k };
   };
-  const hover = (t: Target | null) => {
-    if (!drag || same(t, drag.over)) return;
-    if (drag.over) table.targetEl(drag.over).classList.remove('accept');
-    drag.over = t;
-    if (t && hands.probe(drag.ids, t)) table.targetEl(t).classList.add('accept');
-  };
 
   stage.addEventListener('pointerdown', (e) => {
     const hit = e.target as Element;
-    const el = hit.closest<HTMLElement>('[data-drag]') ?? hit.closest<HTMLElement>('[data-tap]');
-    if (!el || drag) return;
+    const el = hit.closest<HTMLElement>('[data-tap]') ?? hit.closest<HTMLElement>('[data-drag]');
+    if (!el) {
+      hands.clear();
+      return;
+    }
+    if (press) return;
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
     const p = toStage(e);
-    const from = el.dataset.drag ?? 'tap';
-    drag = { el, ids: idsOf(el), from, x0: p.x, y0: p.y, base: el.style.transform, moved: false, over: null, t0: performance.now() };
+    press = { el, x0: p.x, y0: p.y, moved: false, t0: performance.now() };
   });
 
   stage.addEventListener('pointermove', (e) => {
-    if (!drag) return;
+    if (!press || press.moved) return;
     const p = toStage(e);
-    const dx = p.x - drag.x0;
-    const dy = p.y - drag.y0;
-    if (!drag.moved) {
-      if (Math.hypot(dx, dy) * p.k < TUNING.drag_slop_px || drag.from === 'tap') return;
-      drag.moved = true;
-      drag.el.classList.add('lifted');
-      hands.lifted();
-    }
-    drag.el.style.transform = `${drag.base} translate(${dx}px, ${dy}px)`;
-    hover(table.targetAt(p.x, p.y));
+    if (Math.hypot(p.x - press.x0, p.y - press.y0) * p.k >= TUNING.drag_slop_px) press.moved = true;
   });
 
-  const drop = () => {
-    if (!drag) return;
-    const d = drag;
-    const over = d.over;
-    hover(null);
-    drag = null;
-    d.el.classList.remove('lifted');
-    d.el.style.transform = d.base;
-    if (!d.moved) return hands.tap(d.el, performance.now() - d.t0 >= TUNING.long_press_ms);
-    if (over) {
-      if (!hands.place(d.ids, over)) hands.refused();
-    } else if (d.from !== 'table') {
-      hands.unplace(d.ids);
-    }
+  const release = () => {
+    if (!press) return;
+    const p = press;
+    press = null;
+    if (!p.moved) hands.tap(p.el, performance.now() - p.t0 >= TUNING.long_press_ms);
   };
-  stage.addEventListener('pointerup', drop);
-  stage.addEventListener('pointercancel', drop);
+  stage.addEventListener('pointerup', release);
+  stage.addEventListener('pointercancel', release);
 
   table.flame.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -100,26 +73,18 @@ export function attachInput(stage: HTMLElement, table: Table, hands: Hands): voi
     hands.tapFlame();
   });
 
-  const unpick = () => {
-    picked?.classList.remove('selected');
-    picked = null;
-  };
+  // the keyboard path: Enter or Space on a card, a niche, the tally or the day tag is a tap
   stage.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') return unpick();
+    if (e.key === 'Escape') return hands.clear();
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const el = e.target as HTMLElement;
+    if (el === table.flame) {
+      e.preventDefault();
+      return hands.tapFlame();
+    }
+    const target = el.closest<HTMLElement>('[data-tap]');
+    if (!target) return;
     e.preventDefault();
-    if (el === table.flame) return hands.tapFlame();
-    if (el.dataset.drag) {
-      unpick();
-      picked = el;
-      el.classList.add('selected');
-      return hands.lifted();
-    }
-    const target: Target | null = el.dataset.niche ? { niche: el.dataset.niche as never } : el.classList.contains('dish') ? 'candle' : null;
-    if (target && picked) {
-      if (!hands.place(idsOf(picked), target)) hands.refused();
-      unpick();
-    }
+    hands.tap(target, false);
   });
 }

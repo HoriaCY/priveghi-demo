@@ -1,7 +1,8 @@
 # Priveghi — demo
 
-A card table kept at a wake. For nine days you keep vigil beside one who died unwed, mourning
-threads of longing (*dor*) before they turn to grief (*jale*). A small game for the browser:
+A card table kept at a wake, where the dead is you. For nine days you lie on the plank at your own
+wake as Cel Nenuntit, the one who died unwed; the living send threads of longing (*dor*), and what
+you make of them before they gutter is what they will remember of you. A small game for the browser:
 landscape, phone first, also on tablets and desktops. Rules in Rust compiled to WebAssembly
 (`crates/priveghi-engine`); the table drawn in SVG by code (`src/`). Static files only.
 
@@ -10,49 +11,78 @@ landscape, phone first, also on tablets and desktops. Rules in Rust compiled to 
 ## On a phone
 
 1. Open the link in Safari, and turn the phone sideways.
-2. Touch the dark. A match is struck and the shrine's flame catches; carry the candle lying on
-   its sill into the shrine. The table opens.
+2. They bring you home: the table opens on day one with the candle lit at your head. (The boot in
+   the dark, a match struck at the troiță, returns at step 5 of the turnover below.)
 3. For full screen: Share → Add to Home Screen, then open Priveghi from its icon.
 
-The wake is saved in this browser only; add `?reset` to the link to begin again. `?seed=N`
-deals a different wake; the same seed plays the same beats.
+The wake is saved in this browser only; add `?reset` to the link to begin again. `?seed` is retired
+(RULINGS R60): the dead's wake has no dice. Who sends Dor, and when, follows the living's standing
+and the days, so every wake deals the same first table and differs only by what is done at it.
 
 ## How it plays (the game itself has no instructions)
 
-Drag cards into the niches; everything happens when the day closes, after 60 seconds or when
-you tap the candle's flame. Wander Codrii Vlăsiei (UMBLĂ) for threads of longing; each loses a
-grain a day and turns to grief, so give them to Rada (BOCEȘTE) in threes. Listen to the lullaby
-(ASCULTĂ) for a name and speak it at the dark door (DESCÂNTĂ) for a blessing. The peddler comes
-with the fourth wander; host him (GĂZDUIEȘTE) for wheat, and with no guest the hearth turns
-wheat into colivă. Lay colivă on Cel Nenuntit on days 3 and 9. Feed the candle; rest with the
-flask at the shrine (ÎNCHINĂ-TE); tie threads on its sill to keep them. Tap a card to read it;
-tap again for the page.
+What the branch does today, step 2 of the turnover: the table is drawn from the engine, the clock
+runs, and cards answer a tap. The drags that commit an act, the plays, the dream and the priest, and
+the endings' pages come with steps 3–5.
+
+- A day is 60 seconds. The candle at the cloth's head burns down in real time; at the fortieth
+  second dusk falls, the table darkens and the living at the table fall asleep; the day closes at
+  the sixtieth. Nine days, or fewer.
+- The living send Dor (longing) of five kinds, each a bond with one of them: *neam* (kin),
+  *dragoste* (love), *frate* (the sworn brother's bond), *vrajbă* (enmity), *rugăciune* (prayer).
+  A Dor lies on the cloth with three grains on its edge; one falls at each close, and at none it
+  gutters into Uitare (oblivion), written on your card. From step 3, a Dor dropped on a thing of the
+  house, a person or a place becomes an Amintire, a memory kept on that person's tally.
+- Tap any card: a paper strip names it, its kind, its owner, and its state (the grains, a stroke
+  per resting day, a count). A tapped Dor stays in hand; tapping a thing, a person or a place then
+  names what the two would make: Amintire ștearsă, Amintire or Amintire vie. A second tap, or a
+  hold, opens the page. Tap the tally under your card for the five names and their marks; tap the
+  day tag for the page, which carries the day, Uitare and the forecast, Spaimă, Putere, the tally,
+  and the card in focus.
+- Nothing stops the clock but leaving the tab. The idle dead lets every Dor gutter and is gone, in
+  Uitare, before day nine.
 
 ## What is on the table
 
-The numbers match [docs/shots/step-2/annotated-1280x720.png](docs/shots/step-2/annotated-1280x720.png)
-(`?fixture=wake&annotate`).
+The numbers match [docs/shots/v3-step-2/annotated-1280x720.png](docs/shots/v3-step-2/annotated-1280x720.png)
+(`?fixture=wake&annotate`: the fifth day of a considered hand, which knocks by night so the priest
+stays away; `?fixture=preot` is the one inside his service).
 
-1. **The far seat**: another player's face-down cards and their unlit candle. On day nine the
-   Bride's wreath lands here.
-2. **ÎNCHINĂ-TE**, the troiță niche, the only roofed one: an icon on gold and a flame that never
-   goes out. The flask here closes the day; a Fir de dor here is tied and stops decaying.
-3. **The verb niches**: UMBLĂ (wander), ASCULTĂ (listen), DESCÂNTĂ (speak a charm), BOCEȘTE
-   (mourn), GĂZDUIEȘTE (host). Cards dropped in act when the day closes.
-4. **A working niche**: Bocește holding Rada and three Fir de dor. The taper beside it burns down
-   one step a day; the thin gold rim shows while it works.
-5. **The dark door**: Descântă's answer comes through it. Nothing is dropped on it.
-6. **The plank** with Cel Nenuntit, the one who died unwed. Colivă laid on him on days 3 and 9
-   keeps his marks.
-7. **The kit and the road**: Codrii Vlăsiei (the place you wander), the flask, candles, wheat,
-   bog iron, salt.
-8. **The cloth**: Rada, the peddler, Fir de dor (three grains, one falls each day; at none it
-   turns to Jale), the lullaby, names, laments, colivă.
-9. **LUMÂNARE**, the table candle: its height is the wax left; a candle card goes in its dish.
-   Tap its flame to close the day. The three wax drops under it are Vigoare.
-10. **Bread and salt.**
-11. **Jale's corner**: grief from threads nobody mourned. Three Jale break the watcher (Frânt)
-    and the niches lock until it is mourned.
+1. **The far seat**: the other side of the table, face-down backs and an unlit candle.
+2. **ODIHNEȘTE-TE**, the troiță niche, the only roofed one: an icon on gold, a flame that never
+   goes out, and on its ledge the sill where three Dor can be tied to slow their guttering. A tap
+   on it rests the dead and brings the dawn (step 3).
+3. **The screen of verbs**: BÂNTUIE (haunt a place), ASCULTĂ (listen for a fragment of what they
+   say of you), URNEȘTE (shift a thing: the knock), ȘOPTEȘTE (whisper into a sleep: the dream),
+   ARATĂ-TE (show yourself). Each lintel carries its mark: the meander, the tree of life, the
+   wolf-tooth, the running S, the row of eyes. A verb at work seats the Dor in its heart and the
+   target at its side, under a thin gold rim.
+4. **The dark door**: on the ninth day, if little enough was forgotten, the Bride stands in it,
+   her wreath the one blue on the table. Your card on the door is TRECI, the wedding.
+5. **The plank** with your card: your body under the sheet, a candle at the head, the red-and-white
+   thread. Its hem is the knot of the wedding you did not have, and Uitare is written on it without
+   a numeral: the colour thins at 2, the knot breaks at 4, an eye opens at 6, the cord frays at 8.
+   After the burial, at the third close, the cross stands here with the same grammar.
+6. **The tally**: five bands, one per person who sends Dor (Mama, Drăguță, Frate de cruce, Dușman,
+   Preot), each in their own motif, its ink deeper the more they hold you; on its right a mark per
+   Amintire: a dot for a faded one, a short stroke, a tall stroke for a living one, a small cross
+   for a Minune.
+7. **The forecast** (*prevestire*): Uitare now, then at the next three dawns if nothing is done.
+8. **The cloth row**: the Dor stacks by sender and days left (a count tag when stacked), the
+   fragments and the Semn, and at the right end the living present at the table today (dimmed,
+   asleep, at night).
+9. **The kit and the road**: the house's things, each with its owner's motif chipped in the corner
+   (Cană, Broboadă, Inel, Icoană, Oglindă; the knife, the flute and the bow when a haunt brings
+   them; a *pomană de vis* when a dream leaves one), then the pile of things that rest after use
+   (dimmed, with a count; tap it for each name and its days), then the places (Casă, Tindă, Curte,
+   Sat, Biserică). When more arrive than fit, the row spreads like a hand, each card's left edge
+   its own.
+10. **STINGE**, the table candle at the cloth's edge: its height is the time left to dusk; out
+    through the night; whole again at a lit dawn; unlit all day once the house stops lighting it. A
+    tap on its flame brings the night now (step 3).
+11. **Putere**: four wax drops, the dead's one stat; a knock, a dream or a haunt spends one, an
+    apparition two, listening none; rest refills them.
+12. **Bread and salt.**
 
 ## Type
 
@@ -83,14 +113,15 @@ npm run check                    # Romanian strings, the palette law, the privac
 ```
 
 Every push to `main` runs all of it in GitHub Actions and deploys `dist/` to Pages.
-Review views: `?fixture=start|wake|frant|broken`, `?still` (the clock stops), `?annotate`,
+Review views: `?fixture=start|night|wake|dark|door|preot|tarus|uitare` (a fixture is a list of
+actions the engine plays; it never touches the saved wake), `?still` (the clock stops), `?annotate`,
 `?typetest`, `?sheet` (every card face), `?icon`.
 
 ## Turning over to the dead's wake
 
 The fiction turned over on 2026-10-13: the player is the dead, Cel Nenuntit at his own wake
 (`SYSTEMS_v3_MORTUL.md` and its addendum, in the loki repository). The turnover is built one
-step at a time; the site above still plays the watcher's wake until the renderer follows.
+step at a time, each on its own branch; the site above plays what `main` holds.
 
 - **Step 1 (done):** the dead's engine, `crates/priveghi-engine/src/v3/` — Dor by sender and kind,
   the house's things with their affinities and owners, the living who come to the table, Uitare,
@@ -98,7 +129,19 @@ step at a time; the site above still plays the watcher's wake until the renderer
   priest, the Hunter, the five endings. Its integration test plays the chapter's considered dead for
   nine days and must print, byte for byte, what the chapter's simulator printed
   (`tests/fixtures/v3_chibzuit_9.txt`). Rulings R48–R56; the chapter's rulings of 2026-10-14 (BÂNTUIE for the going verb, the Bride checked before the last day's soroc, three Dor on day one) folded in as R57–R59.
-- Steps 2–6: the table, the plays, the dream and the priest, the page, polish — each its own branch.
+- **Step 2 (done):** the table, the clock and taps. The WebAssembly export is now the dead's
+  `Engine` (`new`, `load`, `save`, `state` with the forecast beside it, `probe`, `apply`,
+  `matches`); the watcher's Rust modules stay until step 6, and `?seed` is retired with the dice.
+  The v3 table: the plank with your card, Uitare's grammar on its hem, the five tally bands and
+  the forecast tag; the cloth row and the kit row drawn from the engine's cards; the six niches
+  with their lintel marks and the dark door, where the Bride stands on the ninth day; the candle
+  burning down to dusk in real time, the dusk, the sleeping living; the strip on a tap with the
+  Dor in hand and the match it would make; the page with the counters, the tally and the card in
+  focus; the spoken lines at their beats; 28 card faces on the sheet; eight fixtures. Rulings
+  R60–R95. Not yet: the drags that commit, the plays, STINGE and rest by touch, the boot in the
+  dark, the endings' pages beyond their title (the engine already reaches every ending).
+- Steps 3–6: the gestures and the plays (Bocănit, Vis, the skip's cat, mask and draft); the dream
+  and the priest with Spaimă's tells; the page and the boot; polish and the watcher's leaving.
 
 ## Design
 

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ANCHORS = ['#171310', '#E9DCB5', '#F2EDE2', '#2E5E7E', '#B5342C', '#6E2320', '#C39A3B', '#4F7A66', '#4A3B2C'];
-const NEUTRALS = ['#6b5a44', '#8f7d60', '#d8ccab', '#e4d7b2', '#BAB091', '#b9ad8c', '#110e0b', '#0c0a08', '#a3814f', '#3b3027', '#5a4c3d'];
+const NEUTRALS = ['#6b5a44', '#8f7d60', '#d8ccab', '#e4d7b2', '#BAB091', '#b9ad8c', '#110e0b', '#0c0a08', '#a3814f', '#3b3027'];
 const ALLOWED = new Set([...ANCHORS, ...NEUTRALS].map((h) => h.toLowerCase()));
 // rgba forms of soot, the room and wax (shadows, darkness, the light pool)
 const RGB_ALLOWED = new Set(['23,19,16', '17,14,11', '233,220,181', '0,0,0,0']);
