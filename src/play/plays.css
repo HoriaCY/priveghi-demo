@@ -1,10 +1,12 @@
 /* The plays' paper over the table and the skip's transitions (charter section 7, RULINGS R70),
-   ported from prototype v5 section 12 (.play5, .playcard, .flamebeat, .tapzone, .playbtns, .cat5,
-   knock5). Paper on soot; the palette through the tokens of style.css; nothing glows or pulses.
-   Every duration that is a knob is set inline from src/tuning.ts (plays.ts), never written here. */
+   ported from prototype v5 section 12 (.play5, .playcard, .flamebeat, .tapzone, .tiles, .playbtns,
+   .cat5, knock5). Paper on soot; the palette through the tokens of style.css; nothing glows or
+   pulses (a picked tile is told by contour weight). Every duration that is a knob is set inline
+   from src/tuning.ts (plays.ts), never written here. */
 
 /* the paper: above the cards, the lifted card (z 20) and the dusk; under the boot's night (25) and the strip (40) */
 .play { position: absolute; left: 240px; top: 380px; width: 720px; z-index: 22; }
+.play:focus { outline: none; }
 .playcard { background: var(--paper); color: var(--soot); box-shadow: 0 0 0 2px var(--soot); padding: 14px 18px; font-family: var(--body); }
 .playtitle { font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.1; }
 
@@ -22,6 +24,14 @@
 .tapzone svg { display: block; width: 120px; height: 24px; }
 .tapzone.ready { opacity: 1; cursor: pointer; }
 .tapzone:focus-visible, .skip:focus-visible { outline: 2px solid var(--soot); outline-offset: 2px; }
+
+/* the dream's tiles (v5's .tiles): six small Dor faces, 90x126 with a 10 px gap (48x68 CSS px on the phone,
+   past a thumb's 44); a picked one is told by contour weight alone, its own card contour heavier */
+.tiles { display: flex; gap: 10px; margin: 12px 0; }
+.tile { width: 90px; height: 126px; padding: 0; margin: 0; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+.tile svg { display: block; width: 100%; height: 100%; }
+.tile.picked .face-contour { stroke-width: 6; }
+.tile:focus-visible { outline: 2px solid var(--soot); outline-offset: 2px; }
 
 .playbtns { display: flex; justify-content: flex-end; margin-top: 12px; }
 .skip {
@@ -50,6 +60,20 @@
   100% { rotate: 0deg; }
 }
 
+/* the mask (R66): the masked player of the vigil nights rises from the far side band at the stage's top (left 560,
+   between ASCULTA and URNESTE), bows nine degrees from the foot and back, and sinks; its duration is TUNING.mask_ms.
+   It touches nothing and says nothing */
+.masca { position: absolute; left: 560px; top: 0; width: 120px; height: 168px; pointer-events: none; opacity: 0; z-index: 21; transform-origin: 50% 100%; }
+.masca.run { animation: maskrise 0s ease-in-out forwards; }
+@keyframes maskrise {
+  0% { transform: translateY(-180px) rotate(0deg); opacity: 1; }
+  33% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  45% { transform: translateY(0) rotate(9deg); opacity: 1; }
+  57% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  66% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-180px) rotate(0deg); opacity: 1; }
+}
+
 /* the draft: a hand rises beside the candle and sinks over TUNING.draft_ms; the victim shifts 2 px and back */
 .draft { position: absolute; width: 90px; height: 90px; pointer-events: none; opacity: 0; z-index: 21; }
 .draft.run { animation: draftrise 0s ease-in-out forwards; }
@@ -65,9 +89,10 @@
   35%, 65% { translate: 2px 0; }
 }
 
-/* reduced motion: the piece stands where its lunge would have been and fades (the charter's 200 ms, set inline) */
+/* reduced motion: the piece stands where its lunge would have been (the cat), where it would have risen to (the
+   mask), or at the candle (the hand), and fades (the charter's 200 ms, set inline) */
 .cat.fade { left: calc(var(--lunge-x, 560px) - 140px); }
-.cat.fade, .draft.fade { animation: playfade 0s ease forwards; }
+.cat.fade, .masca.fade, .draft.fade { animation: playfade 0s ease forwards; }
 @keyframes playfade {
   0% { opacity: 0; }
   50% { opacity: 1; }

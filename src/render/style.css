@@ -51,6 +51,12 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stage .dusk { position: absolute; inset: 0; z-index: 19; pointer-events: none; background: rgba(17, 14, 11, 0); transition-property: background; transition-timing-function: ease; }
 .stage .dusk.on { background: rgba(17, 14, 11, .5); }
 
+/* the soroc dishes (step 4): the living's memorial meal on their side of the table, at the far seat's low brightness;
+   one tap target, reaching 44 CSS px on the phone through its hit area */
+.stage .soroace { position: absolute; cursor: pointer; filter: brightness(.45); }
+.stage .soroace .soroc { position: absolute; top: 0; }
+.stage .soroace::after { content: ''; position: absolute; inset: -14px -16px; }
+
 /* the far side: another seat, dark, opened toward you (inverse perspective) */
 .stage .farside {
   position: absolute; left: 0; right: 0; top: 0; height: 104px; display: flex; justify-content: center; gap: 18px; padding-top: 4px;
@@ -73,12 +79,22 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 /* the priest's cords (step 4): hidden until the niche is locked */
 .verb .cord { position: absolute; left: 0; top: 0; width: 150px; height: 210px; display: none; pointer-events: none; }
 .verb.locked .cord { display: block; }
-.verb:focus-visible, .flame-hit:focus-visible, .tally:focus-visible, .daytag:focus-visible, .darkdoor:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
+/* garlic across ARATA-TE's lintel from Spaima 4 (R69, step 4): over the niche's lintel band (y 26 to 46 of its 150x210 frame) */
+.verb .tell { position: absolute; left: 12px; top: 24px; width: 126px; height: 20px; pointer-events: none; }
+.verb:focus-visible, .flame-hit:focus-visible, .tally:focus-visible, .daytag:focus-visible, .darkdoor:focus-visible, .soroace:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
 .darkdoor { position: absolute; width: 60px; height: 236px; }
 .darkdoor > svg { height: 210px; }
 /* the Bride stands in the door (phase door, the Nunta ending): the cununie, the only blue */
 .darkdoor .bridefig { position: absolute; left: 10px; top: 46px; width: 40px; height: 158px; display: none; pointer-events: none; }
 .darkdoor.bride .bridefig { display: block; }
+/* TRECI: the door's verb, written under it only while she stands and the door answers (phase door) */
+.darkdoor .vname {
+  position: absolute; left: -9px; right: -9px; top: 206px; text-align: center; font-family: var(--display); font-weight: 500;
+  font-size: 17px; color: var(--wax); line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; display: none;
+}
+.darkdoor.treci .vname { display: block; }
+/* the door answers your card by contour weight: its frame's strokes, like a card's contour */
+.darkdoor.accept > svg rect { stroke-width: 4; }
 
 /* cards: one element per stack, in a layer above the pool and the vignette (as in the prototype) */
 .stage .cards { position: absolute; inset: 0; pointer-events: none; }
@@ -103,6 +119,11 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stack[data-resting="1"] { opacity: .5; }
 .stack[data-asleep="1"] { opacity: .55; }
 .stack.you { cursor: default; }
+.stack.you[data-drag] { cursor: grab; }
+/* Spaima's tells (R69, step 4): a piece over a place's face, at its lower left above the hem band (y 117 of the 168
+   frame is 105 here): the edge a spread hand always shows (R93), where the brief's lower right goes under the next card */
+.stack .face .tell { position: absolute; left: 7px; top: 60px; width: 40px; height: 40px; pointer-events: none; }
+.stack .face .tell svg { filter: none; }
 .stack.selected .face-contour, .stack:focus-visible .face-contour, .cards .tied.selected .face-contour { stroke-width: 3.2; }
 .stack:focus-visible { outline: none; }
 .cards .heart { position: absolute; width: 108px; height: 151px; }
@@ -205,8 +226,14 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .page .asp { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
 .page .match { font: 18px var(--label); font-variant: small-caps; letter-spacing: .04em; }
 .page .said { margin: 0; font-style: italic; }
+/* the dishes on the page and on the strip: the label, then one dish per memorial day */
+.page .soroace { display: flex; align-items: center; gap: 8px; }
+.page .soroace .soroc { display: inline-block; width: 34px; height: 28px; }
+.toast .dish { display: inline-block; width: 30px; height: 24px; }
 .page .end .title { font: 600 30px/1.2 var(--display); margin-bottom: 8px; }
 .page .end .bride, .page .door .bride { width: 76px; height: 106px; }
+/* the Bride's svg takes her box on the page (outside the stage no rule sizes an svg; unsized it ran past the band below the table) */
+.page .bride svg { display: block; width: 100%; height: 100%; }
 
 /* the flame breathes in two irregular frames; nothing else moves on its own */
 .flame { transform-origin: 50% 100%; animation: breathe 1.3s steps(1, end) infinite; }

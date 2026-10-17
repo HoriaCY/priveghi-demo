@@ -1,19 +1,22 @@
 // The plays (charter section 7, RULINGS R70): the renderer's, reporting a grade; the engine owns
-// every rule and resolves the commit. Bocanit for URNESTE, ported from prototype v5 section 12
-// (batatia, skipPlay): the flame gives a rhythm, four taps are measured against it. The dream play
-// lands in step 4, so a dream commit resolves at once as the skip; ARATA-TE has no play (R64).
-// The skip's transitions, the cat and the draft, cycle and are never the same twice in a row (the
-// mask joins in step 4). performance.now() and setTimeout only, so Playwright's clock can drive
-// the knock. Every word on the paper from src/strings.ts; the palette only through C.
+// every rule and resolves the commit. Bocanit for URNESTE and Vis for SOPTESTE, ported from
+// prototype v5 section 12 (batatia, visul, skipPlay): the flame gives a rhythm and four taps are
+// measured against it; six small Dor faces are dealt and three are picked for the sleeper. ARATA-TE
+// has no play (R64). The skip's transitions, the cat, the draft and the mask, cycle and are never
+// the same twice in a row; through the vigil nights (masti_zile) the mask is the default.
+// performance.now() and setTimeout only, so Playwright's clock can drive the knock. Every word on
+// the paper from src/strings.ts; the palette only through C.
 import './plays.css';
-import type { Grade, Verb } from '../engine';
+import { FELS, type Fel, type Grade, type Verb } from '../engine';
 import { ART } from '../render/art';
+import { cardSVG } from '../render/card';
+import { hemOfFel } from '../render/catalog';
 import { CANDLE } from '../render/layout';
 import { C } from '../render/palette';
-import { CAT, PLAY, SKIP } from '../strings';
+import { CAT, FEL, PLAY, SKIP } from '../strings';
 import { TUNING } from '../tuning';
 
-export type Transition = 'cat' | 'draft';
+export type Transition = 'cat' | 'draft' | 'mask';
 
 export interface PlayDeps {
   stage: HTMLElement;
@@ -27,6 +30,11 @@ export interface PlayDeps {
   /** The strip. */
   say: (html: string) => void;
   reduced: boolean;
+  /** The day, and the engine's `masti_zile`: through it the mask is the skip's default. */
+  day: number;
+  mastiZile: number;
+  /** The dream's deal: the Dor's kind and the sleeper's affinities, read by the hands from the engine's cards. */
+  vis?: { fel: Fel; affinities: Fel[] };
 }
 
 export interface Play {
@@ -47,6 +55,10 @@ const mark = () =>
 const HAND = { x: CANDLE.x - 56, y: CANDLE.y + 20, w: 90, h: 90 };
 /** The cat's lunge, measured from its victim's left edge: v5's cat (left -140, lunge 560) met the cup at 510. */
 const LUNGE_DX = 50;
+/** Where in the mask's run the bow lands (the keyframe `maskrise` bows at 45%): its one tick sounds there. */
+const BOW_AT = 0.45;
+/** Three tiles are picked for the sleeper. */
+const PICKS = 3;
 
 class Timers {
   private ids: number[] = [];
@@ -65,20 +77,29 @@ interface Run {
 
 let last: Transition | null = null;
 
-/** The next transition in the cycle: never the same twice in a row. */
-export function nextTransition(prev: Transition | null): Transition {
-  return prev === 'cat' ? 'draft' : 'cat';
+/**
+ * The next transition: never the same twice in a row. Through the vigil nights (`day <= mastiZile`)
+ * the mask is the default, the cat only after a mask; on later days the cycle cat, draft, mask.
+ */
+export function nextTransition(prev: Transition | null, day: number, mastiZile: number): Transition {
+  if (day <= mastiZile) return prev === 'mask' ? 'cat' : 'mask';
+  switch (prev) {
+    case 'cat': return 'draft';
+    case 'draft': return 'mask';
+    default: return 'cat';
+  }
 }
 
-const pick = (): Transition => {
-  last = nextTransition(last);
+const pick = (deps: PlayDeps): Transition => {
+  last = nextTransition(last, deps.day, deps.mastiZile);
   return last;
 };
 
 /**
  * One transition on the stage, then `then`. The cat crosses and knocks the victim at mid-crossing
- * (v5's 0.9 s of 1.8); the draft gutters the flame under a hand and nudges the victim. A fumble's
- * cat crosses without the knock. Reduced motion: the piece fades in place over FADE_MS.
+ * (v5's 0.9 s of 1.8); the draft gutters the flame under a hand and nudges the victim; the mask
+ * rises from the far side, bows and sinks, touching nothing. A fumble's cat crosses without the
+ * knock. Reduced motion: the piece fades in place over FADE_MS.
  */
 function start(t: Transition, deps: PlayDeps, then: () => void, knock: boolean): Run {
   const timers = new Timers();
@@ -128,6 +149,19 @@ function start(t: Transition, deps: PlayDeps, then: () => void, knock: boolean):
       }
       end(TUNING.cat_ms);
     }
+  } else if (t === 'mask') {
+    // the masked player of the vigil nights: no victim, no knock, no line (no string names the mask)
+    piece.className = 'masca';
+    piece.innerHTML = `<svg viewBox="0 0 120 168" aria-hidden="true">${ART.masca()}</svg>`;
+    deps.stage.append(piece);
+    if (deps.reduced) {
+      fade();
+    } else {
+      piece.style.animationDuration = `${TUNING.mask_ms}ms`;
+      piece.classList.add('run');
+      timers.after(TUNING.mask_ms * BOW_AT, () => deps.tick(0.9));
+      end(TUNING.mask_ms);
+    }
   } else {
     piece.className = 'draft';
     piece.style.left = `${HAND.x}px`;
@@ -170,10 +204,32 @@ export function runTransition(t: Transition, deps: PlayDeps, then: () => void): 
   start(t, deps, then, true);
 }
 
+/** The paper over the table: the title, the play's body, the skip. A press on it is not a press on the table. */
+function raise(play: 'bocanit' | 'vis', title: string, body: string, stage: HTMLElement): HTMLElement {
+  const paper = document.createElement('div');
+  paper.className = 'play';
+  paper.dataset.play = play;
+  paper.innerHTML =
+    `<div class="playcard"><div class="playtitle">${esc(title)}</div>${body}` +
+    `<div class="playbtns"><button type="button" class="skip">${esc(SKIP.ro)}</button></div></div>`;
+  paper.addEventListener('pointerdown', (e) => e.stopPropagation());
+  // the paper itself takes focus when it rises (Tab reaches its controls): a script focus on a tile after a
+  // pointer drag drew the focus ring, which read as a pick before any pick
+  paper.tabIndex = -1;
+  stage.append(paper);
+  return paper;
+}
+
+/** A tile of the dream: a small Dor face of one kind, named by its kind. */
+function tile(fel: Fel, i: number): string {
+  const face = cardSVG({ uid: `vis-${i}`, name: FEL[fel].ro, art: 'dor', hem: hemOfFel(fel), ground: C.paperSoot });
+  return `<button type="button" class="tile" data-fel="${fel}" aria-label="${esc(FEL[fel].ro)}">${face}</button>`;
+}
+
 /**
- * The play a commit opens. URNESTE: the Bocanit paper. Any other verb has no play in this step
- * (the dream in step 4, the apparition never, R64): a transition runs at once and the commit
- * resolves as the skip.
+ * The play a commit opens. URNESTE: the Bocanit paper. SOPTESTE: the Vis paper, when the hands
+ * passed the deal (without it the dream resolves as the skip). Any other verb has no play (the
+ * apparition never, R64): a transition runs at once and the commit resolves as the skip.
  */
 export function openPlay(verb: Verb, deps: PlayDeps): Play {
   const timers = new Timers();
@@ -216,23 +272,46 @@ export function openPlay(verb: Verb, deps: PlayDeps): Play {
     );
   };
 
+  if (verb === 'sopteste' && deps.vis) {
+    const vis = deps.vis;
+    // the deal (R70): the five kinds in their fixed order, then the Dor's kind again as the sixth
+    const deal: Fel[] = [...FELS, vis.fel];
+    const right = new Set<Fel>([vis.fel, ...vis.affinities]);
+    paper = raise('vis', PLAY.vis.ro, `<div class="tiles">${deal.map(tile).join('')}</div>`, deps.stage);
+    const tiles = [...paper.querySelectorAll<HTMLElement>('.tile')];
+    const picked: Fel[] = [];
+    tiles.forEach((b, i) => {
+      b.addEventListener('click', () => {
+        if (!open || run || picked.length >= PICKS || b.classList.contains('picked')) return;
+        b.classList.add('picked');
+        picked.push(deal[i]);
+        deps.tick(1.1);
+        if (picked.length < PICKS) return;
+        const ok = picked.filter((k) => right.has(k)).length;
+        if (ok === PICKS) finish('minunat');
+        else if (ok === PICKS - 1) finish('bun');
+        // a slab: the engine resolves it as the skip; a transition plays and nothing goes over
+        else leave(pick(deps), 'slab', false);
+      });
+    });
+    paper.focus({ preventScroll: true });
+    paper.querySelector<HTMLElement>('.skip')!.addEventListener('click', () => leave(pick(deps), 'skipped', true));
+    return { close };
+  }
+
   if (verb !== 'urneste') {
-    leave(pick(), 'skipped', true);
+    leave(pick(deps), 'skipped', true);
     return { close };
   }
 
   const gaps = TUNING.knock_gaps_ms;
-  paper = document.createElement('div');
-  paper.className = 'play';
-  paper.dataset.play = 'bocanit';
-  paper.innerHTML =
-    `<div class="playcard"><div class="playtitle">${esc(PLAY.bocanit.ro)}</div>` +
+  paper = raise(
+    'bocanit',
+    PLAY.bocanit.ro,
     `<div class="flamebeat">${'<div class="dot"></div>'.repeat(gaps.length)}</div>` +
-    `<button type="button" class="tapzone" aria-label="${esc(PLAY.bocanit.ro)}">${mark()}</button>` +
-    `<div class="playbtns"><button type="button" class="skip">${esc(SKIP.ro)}</button></div></div>`;
-  // the paper covers the table: a press on it is not a press on the table
-  paper.addEventListener('pointerdown', (e) => e.stopPropagation());
-  deps.stage.append(paper);
+      `<button type="button" class="tapzone" aria-label="${esc(PLAY.bocanit.ro)}">${mark()}</button>`,
+    deps.stage,
+  );
   const dots = [...paper.querySelectorAll<HTMLElement>('.dot')];
   const zone = paper.querySelector<HTMLElement>('.tapzone')!;
   const skip = paper.querySelector<HTMLElement>('.skip')!;
@@ -283,7 +362,7 @@ export function openPlay(verb: Verb, deps: PlayDeps): Play {
     e.stopPropagation();
     tap();
   });
-  skip.addEventListener('click', () => leave(pick(), 'skipped', true));
+  skip.addEventListener('click', () => leave(pick(deps), 'skipped', true));
 
   return { close };
 }

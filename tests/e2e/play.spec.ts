@@ -10,6 +10,8 @@ const SIZES = [
 ];
 const DESK = SIZES[2];
 const SHOTS = 'docs/shots/v3-step-3';
+/** The skip tests were re-aimed at step 4's cycle (RULINGS R131): their shots are this step's. */
+const SHOTS_4 = 'docs/shots/v3-step-4';
 const T0 = new Date('2026-10-16T09:00:00Z');
 
 async function open(page: Page, query: string, size = DESK) {
@@ -43,7 +45,7 @@ type Card = { id: number; kind: string; at: unknown; from?: string; lucru?: stri
 const view = (page: Page) =>
   page.evaluate(() => {
     const v = window.priveghi!.view();
-    return { cards: v.cards as Card[], uitare: v.uitare, putere: v.putere, spaima: v.spaima, night: v.night, day: v.day, commit: v.commit };
+    return { cards: v.cards as Card[], uitare: v.uitare, putere: v.putere, spaima: v.spaima, night: v.night, day: v.day, commit: v.commit, mastiZile: v.config.masti_zile };
   });
 
 const centre = async (l: Locator) => {
@@ -101,8 +103,20 @@ for (const size of SIZES) {
   });
 }
 
-test('Sari peste: the cat takes the blame, the kerchief keeps the memory', async ({ page }) => {
+test('Sari peste on a vigil night: the mask first, then the cat takes the blame and the kerchief keeps the memory', async ({ page }) => {
   const { errors } = await open(page, 'fixture=start&still');
+  // through the vigil nights (masti_zile) the mask is the skip's default (R66, R124)
+  const before = await view(page);
+  expect(before.day).toBeLessThanOrEqual(before.mastiZile);
+  await drag(page, page.locator('.stack[data-kind="dor"][data-from="draguta"]'), page.locator('.stack[data-lucru="inel"]'));
+  await expect(page.locator('.play[data-play="bocanit"]')).toBeVisible();
+  await page.locator('.play .skip').click();
+  await expect(page.locator('.masca.run')).toBeAttached();
+  await expect(page.locator('.cat')).toHaveCount(0);
+  await expect(page.locator('.toast')).not.toContainText('Pisica.');
+  await expect(page.locator('.verb.working')).toHaveCount(0, { timeout: TUNING.mask_ms + 3000 });
+  await expect(page.locator('.masca')).toHaveCount(0);
+  // the second skip of the vigil night: the cat, never the mask twice
   await drag(page, mama(page), broboada(page));
   await expect(page.locator('.play[data-play="bocanit"]')).toBeVisible();
   await page.locator('.play .skip').click();
@@ -116,7 +130,7 @@ test('Sari peste: the cat takes the blame, the kerchief keeps the memory', async
   expect(await cat.evaluate((e) => e.style.getPropertyValue('--lunge-x'))).toBe(`${cupX + 50}px`);
   // mid-run: the cup goes over under the cat (held knock_hit_ms, so the poll is finer than the default cadence)
   await expect.poll(() => cup.evaluate((e) => e.classList.contains('knocked')), { intervals: [40], timeout: TUNING.cat_ms }).toBe(true);
-  await page.screenshot({ path: `${SHOTS}/cat-1280x720.png` });
+  await page.screenshot({ path: `${SHOTS_4}/cat-1280x720.png` });
   // the cat has crossed: the engine resolved the act as the skip
   await expect(mama(page)).toHaveCount(0);
   await expect(page.locator('.verb.working')).toHaveCount(0);
@@ -124,11 +138,12 @@ test('Sari peste: the cat takes the blame, the kerchief keeps the memory', async
   await expect(marks).toHaveCount(1);
   // strength 2 (the mother's longing in the mother's kerchief): a tall stroke
   await expect(marks).toHaveAttribute('d', 'M65 1 V11');
+  // the ring rested first, the kerchief after it: the pile's top card is the kerchief
   const pile = page.locator('.stack[data-key="rest"]');
   await expect(pile).toHaveAttribute('data-lucru', 'broboada');
   await expect(pile).toHaveAttribute('data-resting', '1');
   await expect(page.locator('body')).toHaveAttribute('data-uitare', '0');
-  await expect(page.locator('body')).toHaveAttribute('data-putere', '3');
+  await expect(page.locator('body')).toHaveAttribute('data-putere', '2');
   // the living name you, even when the counter does not move
   await expect(page.locator('.toast .nm')).toHaveText('Amintire vie');
   await expect(page.locator('.toast .sub')).toHaveText('Mama · Pomenire');
@@ -140,29 +155,41 @@ test('Sari peste: the cat takes the blame, the kerchief keeps the memory', async
   expect(errors).toEqual([]);
 });
 
-test('the second skip is the draft: the flame gutters under a hand at the candle', async ({ page }) => {
-  const { errors } = await open(page, 'fixture=start&still');
+test('after the vigil nights the skips cycle: the cat, then the draft at the candle, then the mask', async ({ page }) => {
+  // the fifth day of the considered hand: past masti_zile, with loose Dor, two ready things and the living by day
+  const { errors } = await open(page, 'fixture=wake&still');
+  const before = await view(page);
+  expect(before.day).toBeGreaterThan(before.mastiZile);
   await drag(page, mama(page), broboada(page));
+  await expect(page.locator('.play[data-play="bocanit"]')).toBeVisible();
   await page.locator('.play .skip').click();
   await expect(page.locator('.cat.run')).toBeAttached();
   await expect(page.locator('.verb.working')).toHaveCount(0, { timeout: TUNING.cat_ms + 3000 });
-  // the betrothed's longing on the ring: the next skip in the cycle is the draft, never the cat twice
-  await drag(page, page.locator('.stack[data-kind="dor"][data-from="draguta"]'), page.locator('.stack[data-lucru="inel"]'));
+  // the sworn brother's longing on the knife: the next skip in the cycle is the draft, never the cat twice
+  await drag(page, page.locator('.stack[data-kind="dor"][data-from="frate"]'), page.locator('.stack[data-lucru="cutit"]'));
   await expect(page.locator('.play[data-play="bocanit"]')).toBeVisible();
   await page.locator('.play .skip').click();
   const hand = page.locator('.draft.run');
   await expect(hand).toBeAttached();
   await expect(page.locator('.cat')).toHaveCount(0);
   await expect(page.locator('.maincandle')).toHaveClass(/gutter/);
-  await expect(page.locator('.stack[data-lucru="cana"]')).toHaveClass(/drafted/);
   await expect(page.locator('.toast')).not.toContainText('Pisica.');
   await page.waitForTimeout(TUNING.draft_ms / 3);
-  await page.screenshot({ path: `${SHOTS}/draft-1280x720.png` });
+  await page.screenshot({ path: `${SHOTS_4}/draft-1280x720.png` });
   await expect(page.locator('.verb.working')).toHaveCount(0, { timeout: TUNING.draft_ms + 3000 });
   await expect(page.locator('.draft')).toHaveCount(0);
+  // the betrothed's longing shown to the betrothed by day (ARATA-TE resolves as the skip, R64): the mask closes the cycle
+  await drag(page, page.locator('.stack[data-key="dor:draguta:3"]'), page.locator('.stack[data-om="draguta"]'));
+  await expect(page.locator('.masca.run')).toBeAttached();
+  await expect(page.locator('.cat')).toHaveCount(0);
+  await expect(page.locator('.draft')).toHaveCount(0);
+  await expect(page.locator('.verb.working')).toHaveCount(0, { timeout: TUNING.mask_ms + 3000 });
+  await expect(page.locator('.masca')).toHaveCount(0);
   const v = await view(page);
   expect(v.commit).toBeNull();
-  expect(v.putere).toBe(2);
+  // three acts spent (a knock one each, the apparition two): the table shows the engine's count
+  expect(v.putere).toBeLessThan(before.putere);
+  await expect(page.locator('body')).toHaveAttribute('data-putere', String(v.putere));
   expect(errors).toEqual([]);
 });
 

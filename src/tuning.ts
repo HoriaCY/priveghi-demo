@@ -27,4 +27,9 @@ export const TUNING = {
   cat_ms: 1800, // the cat's crossing
   mask_ms: 1600, // the masked figure rising, bowing, sinking
   draft_ms: 1400, // the flame guttering under a hand
+  // Spaima's tells (chapter section 8, RULINGS R69): drawn by the renderer from these thresholds, unsimulated; the engine never reads them
+  tell_dog_spaima: 3, // the dog tied at the gate: on Curte
+  tell_lintel_spaima: 4, // garlic on ARATA-TE's lintel, before any commit
+  tell_garlic_spaima: 5, // garlic on Casa's window
+  tell_horse_spaima: 7, // the Hunter's horse: on Sat (the well is not in the demo)
 } as const;
