@@ -3,7 +3,7 @@
 // Ported from prototype v5 (design/proto5/v5_art.js): mort, cruce, cana, broboada, oglinda, icoana,
 // mama, draguta, pisica. Kept from v4: dor, rada, cununie. Drawn for the dead's table in the same
 // grammar: frantura, semn, inel, cutit, fluier, arc, pomana, frate, dusman, preot, casa, tinda, curte,
-// sat, biserica, masca.
+// sat, biserica, masca, mana (the draft's cupped hand, a 90x90 piece beside the candle in step 3).
 import { C } from './palette';
 import { rosette, thread } from './motifs';
 
@@ -12,7 +12,7 @@ export type ArtId =
   | 'cana' | 'broboada' | 'inel' | 'icoana' | 'oglinda' | 'cutit' | 'fluier' | 'arc' | 'pomana'
   | 'mama' | 'draguta' | 'frate' | 'dusman' | 'preot' | 'rada'
   | 'casa' | 'tinda' | 'curte' | 'sat' | 'biserica'
-  | 'pisica' | 'masca' | 'cununie';
+  | 'pisica' | 'masca' | 'mana' | 'cununie';
 
 const ring = (a: number) => {
   const r = (a * Math.PI) / 180;
@@ -115,6 +115,11 @@ export const ART: Record<ArtId, () => string> = {
     <ellipse cx="49" cy="58" rx="5" ry="4" fill="${C.soot}"/><ellipse cx="71" cy="58" rx="5" ry="4" fill="${C.soot}"/><path d="M60 60 L57 70 H63" fill="none" stroke="${C.soot}" stroke-width="1.2"/><path d="M48 78 Q60 84 72 78" fill="none" stroke="${C.soot}" stroke-width="1.4" stroke-dasharray="3 2"/>
     <rect x="74" y="44" width="10" height="8" fill="${C.clot}" stroke="${C.soot}" stroke-width="1"/>
     <path d="M40 88 L36 112 M48 91 L46 114 M56 93 L56 115 M64 93 L66 114 M72 91 L76 112 M80 88 L84 108" stroke="${C.woodMid}" stroke-width="2.4" stroke-linecap="round"/>`,
+  // the draft's hand: a left hand, palm to the viewer, fingers reaching right to cup the flame; the house's sleeve
+  mana: () => `<path d="M34 110 L30 66 Q30 38 52 30 L88 26 Q102 18 106 28 Q108 42 94 44 L80 46 L96 46 Q112 44 110 58 Q108 70 96 70 L80 70 L92 72 Q106 72 104 84 Q102 94 92 92 L80 92 L84 94 Q96 96 94 104 Q92 110 82 108 L58 110 Z" fill="${C.wax}" stroke="${C.soot}" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M50 34 Q48 14 64 12 Q78 12 76 26 L70 40 Z" fill="${C.wax}" stroke="${C.soot}" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M42 56 Q50 78 44 100" fill="none" stroke="${C.soot}" stroke-width="1" opacity=".4"/>
+    <rect x="28" y="100" width="36" height="14" fill="${C.earth}" stroke="${C.soot}" stroke-width="2"/><path d="M28 102 H64" stroke="${C.lime}" stroke-width="1.6"/>`,
   // the only blue in the demo: one Voronet thread, the Bride's wreath
   cununie: () => `<circle cx="60" cy="72" r="30" fill="none" stroke="${C.gold}" stroke-width="7"/><circle cx="60" cy="72" r="30" fill="none" stroke="${C.soot}" stroke-width="1.2"/><circle cx="60" cy="72" r="23" fill="none" stroke="${C.soot}" stroke-width="1.2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(ring).join('')}<path d="M60 102 l-3 14 M60 102 l3 14" stroke="${C.voronet}" stroke-width="2.4"/><path d="M57 116 q3 3 6 0" fill="none" stroke="${C.voronet}" stroke-width="2"/>`,
 };

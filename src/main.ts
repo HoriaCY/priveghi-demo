@@ -1,21 +1,25 @@
 // The demo: the engine holds the dead's wake; the table and the page draw it; hands send actions;
-// the clock ticks; the wake is saved on this device only. Step 2: the table, the clock and taps.
+// the clock ticks; the wake is saved on this device only. Step 3: the drags that commit, the plays,
+// STINGE and rest by touch, the close's visible beats.
 import './render/style.css';
 import { Wake } from './engine';
-import type { Action, Entry, View } from './engine';
+import type { Action, Card, Commit, Entry, View } from './engine';
 import { applyFixture, isFixture } from './fixtures';
 import { attachInput } from './play/input';
 import { Page, type Focus } from './play/page';
+import { openPlay, type Play } from './play/plays';
 import { SOUND, silence, startAmbience, unlockAudio } from './render/audio';
+import { ownerName } from './render/catalog';
 import { fitStage } from './render/fit';
 import { rotateSVG } from './render/furniture';
 import { CANDLE, DOOR_X, FORECAST, PUTERE, ROW_CLOTH, ROW_KIT, STILL_LIFE, TALLY, nicheX } from './render/layout';
-import { Table } from './render/table';
-import { LINES, TYPE_TEST } from './strings';
+import { Table, type Target } from './render/table';
+import { AMINTIRE, LINES, POMENIRE, TYPE_TEST } from './strings';
 import { TUNING } from './tuning';
 
 const params = new URLSearchParams(location.search);
 const SAVE_KEY = 'priveghi.v3';
+const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 declare global {
   interface Window {
@@ -166,6 +170,7 @@ async function main(): Promise<void> {
   const rotate = document.getElementById('rotate')!;
   rotate.innerHTML = rotateSVG();
   const table = new Table(stage);
+  stage.style.setProperty('--gone-ms', `${TUNING.gone_ms}ms`);
   const pageEl = document.createElement('section');
   pageEl.className = 'page';
   pageEl.setAttribute('aria-live', 'polite');
@@ -204,6 +209,11 @@ async function main(): Promise<void> {
   let view: View = wake.state();
   let seen = view.log.length;
   let clock = 0;
+  /** The play whose paper is open; closed by the renderer when the day's close resolved its act. */
+  let play: Play | null = null;
+  let resolving = false;
+  /** The stacks' re-flow held back while a guttered Dor fades. */
+  let reflow = 0;
   const act = (a: Action) => {
     const answer = wake.apply(a, Date.now());
     if (answer.ok && answer.changed) refresh();
@@ -221,22 +231,51 @@ async function main(): Promise<void> {
   };
   /** The Dor in hand is told by contour weight on its stack; a Dor that left the cloth leaves the hand. */
   const select = () => {
-    for (const s of stage.querySelectorAll('.stack.selected')) s.classList.remove('selected');
+    for (const s of stage.querySelectorAll('.stack.selected, .cards .tied.selected')) s.classList.remove('selected');
     const id = page.inHand;
     if (id === null) return;
     const stack = [...stage.querySelectorAll<HTMLElement>('.stack[data-kind="dor"], .cards .tied[data-kind="dor"]')].find((s) => (s.dataset.ids ?? '').split(' ').includes(String(id)));
     if (stack) stack.classList.add('selected');
     else page.inHand = null;
   };
+  const cardOf = (id: number): Card | undefined => view.cards.find((c) => c.id === id);
+  /** The card an act was committed on, from the log (the resolved event does not carry it). */
+  const targetOf = (dor: number): Card | undefined => {
+    const c = [...view.log].reverse().find((x) => x.event === 'committed' && x.dor === dor);
+    return c?.event === 'committed' ? cardOf(c.on) : undefined;
+  };
+
   function refresh(): void {
     view = wake.state();
     const v = view;
     const fresh = v.log.slice(seen);
     seen = v.log.length;
     stage.classList.toggle('booting', v.phase === 'boot');
+    stage.classList.toggle('playing', Boolean(v.commit));
+    // the day's close resolves an open play as the skip: the paper is closed here
+    if (play && !v.commit && !resolving) {
+      play.close();
+      play = null;
+    }
+    // the act just resolved: the Pomenire that follows it names the Amintire made and its owner
+    let made: { strength: number; owner: string } | null = null;
+    const gone: number[] = [];
     for (const e of fresh) {
       sound(e);
       if (e.event === 'precue') table.gutter(v.config.precue_ms);
+      if (e.event === 'guttered') gone.push(e.card);
+      if (e.event === 'resolved') {
+        const on = targetOf(e.dor);
+        made = { strength: e.strength, owner: on ? ownerName(on) : '' };
+      }
+      if (e.event === 'pomenire') {
+        // the living name you, even when the counter does not move (charter section 1)
+        const nm = made ? AMINTIRE[Math.max(0, Math.min(3, made.strength)) as 0 | 1 | 2 | 3].ro : POMENIRE.ro;
+        const sub = made ? [made.owner, POMENIRE.ro].filter(Boolean).join(' · ') : '';
+        made = null;
+        say(`<span class="nm">${text(nm)}</span>${sub ? `<span class="sub">${text(sub)}</span>` : ''}`);
+        page.say([nm, sub].filter(Boolean).join(' · '));
+      }
       const said = line(e);
       if (said) {
         page.say(said);
@@ -244,7 +283,18 @@ async function main(): Promise<void> {
       }
       if (e.event === 'ended' || e.event === 'bride_stands') pageEl.classList.add('open');
     }
-    table.render(v);
+    // a guttered Dor fades where it lay before the stacks re-flow (losses are quiet)
+    window.clearTimeout(reflow);
+    const fading = REDUCED ? [] : gone.map((id) => table.stackOf(id)).filter((s): s is HTMLElement => s !== null);
+    if (fading.length) {
+      for (const s of fading) s.classList.add('gone');
+      reflow = window.setTimeout(() => {
+        table.render(view);
+        select();
+      }, TUNING.gone_ms);
+    } else {
+      table.render(v);
+    }
     select();
     page.render(v);
     if (fresh.some((e) => ['day_closed', 'ended', 'bride_stands'].includes(e.event))) save();
@@ -260,6 +310,46 @@ async function main(): Promise<void> {
     b.ending = v.ending ?? '';
   }
 
+  /** The cat's victim: the cup on the kit row; when the cup is the act's own target, or away, the target in the verb's side seat. */
+  const victimOf = (commit: Commit): HTMLElement | null => {
+    const cup = view.cards.find((c) => c.kind === 'lucru' && c.lucru === 'cana' && c.at === 'kit');
+    return (cup && table.stackOf(cup.id)) ?? table.seatOf(commit.verb);
+  };
+  /** The commit just made opens its play: the paper reports a grade; the engine resolves. */
+  const beginPlay = () => {
+    const commit = view.commit;
+    if (!commit || play) return;
+    const dor = commit.dor;
+    play = openPlay(commit.verb, {
+      stage,
+      resolve: (grade) => {
+        resolving = true;
+        act({ type: 'resolve', dor, grade });
+        resolving = false;
+        play = null;
+      },
+      victim: () => victimOf(commit),
+      gutter: (ms) => table.gutter(ms),
+      tick: (pitch) => SOUND.tick(pitch),
+      say: (html) => say(html),
+      reduced: REDUCED,
+    });
+    // a play that resolved before it returned (reduced motion) leaves nothing to close
+    if (!view.commit) play = null;
+  };
+  /** The action a drop implies (charter section 4); the engine says whether it fits. */
+  const actionFor = (id: number, t: Target): Action | null => {
+    if (t === 'sill') return { type: 'tie', dor: id };
+    // the door takes your card and nothing else, ever (charter section 3)
+    if (t === 'door') return cardOf(id)?.kind === 'cel_nenuntit' ? { type: 'treci' } : null;
+    if ('niche' in t) {
+      if (t.niche === 'bantuie') return { type: 'bantuie', loc: id };
+      if (t.niche === 'asculta') return { type: 'asculta', om: id };
+      return null;
+    }
+    return { type: 'place', dor: id, on: t.card };
+  };
+
   const focusOf = (el: HTMLElement): Focus => {
     if (el.dataset.tap === 'tally') return { tally: true };
     const ids = (el.dataset.ids ?? '').split(' ').filter(Boolean).map(Number);
@@ -267,11 +357,23 @@ async function main(): Promise<void> {
   };
 
   attachInput(stage, table, {
-    // the drags of step 3
-    probe: () => false,
-    place: () => false,
-    unplace: () => false,
-    tapFlame: () => undefined,
+    probe: (ids, t) => {
+      const a = ids.length ? actionFor(ids[0], t) : null;
+      return a ? wake.probe(a, Date.now()).ok : false;
+    },
+    place: (ids, t) => {
+      const id = ids[0];
+      if (id === undefined) return false;
+      // a tied Dor let go on the sill again: it stays where it was, no act, no tick
+      if (t === 'sill' && cardOf(id)?.at === 'sill') return true;
+      const a = actionFor(id, t);
+      if (!a || !act(a)) return false;
+      if (a.type === 'place') beginPlay();
+      return true;
+    },
+    unplace: (ids) => ids.length > 0 && act({ type: 'untie', dor: ids[0] }),
+    // STINGE: refused in silence when it is already night
+    tapFlame: () => void act({ type: 'stinge' }),
     lifted: () => SOUND.tick(1.1),
     refused: () => SOUND.tick(0.8),
     clear: () => {
@@ -284,8 +386,15 @@ async function main(): Promise<void> {
         pageEl.classList.toggle('open');
         return;
       }
-      // the troita (rest) and the door (TRECI) answer in steps 3 and 4
-      if (kind === 'troita' || kind === 'door') return;
+      if (kind === 'troita') {
+        // ODIHNESTE-TE: the pre-cue, then the close; busy or corded, the lower tick only
+        if (!act({ type: 'rest' })) return SOUND.tick(0.8);
+        // the close is the act's own: it comes even where ?still holds the clock
+        window.setTimeout(() => act({ type: 'tick' }), Math.max(0, view.clock.day_ends_at - Date.now()) + 1);
+        return;
+      }
+      // the door answers a drag (TRECI), never a tap
+      if (kind === 'door') return;
       const f = focusOf(el);
       if (!f) return;
       const key = JSON.stringify(f);
@@ -326,6 +435,8 @@ async function main(): Promise<void> {
 
   refresh();
   startClock();
+  // a wake loaded with its play open (a reload mid-knock): the paper comes back
+  beginPlay();
   if (view.phase === 'ended' || view.phase === 'door') pageEl.classList.add('open');
 
   const fit = () => fitStage(stage, pageEl, rotate);
