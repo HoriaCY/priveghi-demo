@@ -154,6 +154,8 @@ test('a wake is saved at the boot and every close and comes back after a reload;
 });
 
 test('a long gap with the tab hidden closes no day: the clock pauses', async ({ page }) => {
+  // three minutes of the fake clock are 1800 ticks: enough for three days, and a third of the ten minutes that ran at the timeout
+  test.slow();
   await page.clock.install({ time: new Date('2026-10-17T09:00:00Z') });
   await open(page, 'reset');
   await light(page);
@@ -165,7 +167,7 @@ test('a long gap with the tab hidden closes no day: the clock pauses', async ({ 
       document.dispatchEvent(new Event('visibilitychange'));
     }, hidden);
   await hide(true);
-  await page.clock.runFor(10 * 60_000);
+  await page.clock.runFor(3 * 60_000);
   await hide(false);
   await page.clock.runFor(500);
   expect(Number(await body(page).getAttribute('data-day'))).toBeLessThanOrEqual(2);
