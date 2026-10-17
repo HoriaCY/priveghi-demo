@@ -1,6 +1,7 @@
 // The table's fixed pieces: the verb niches, the dark door (and the Bride in it), the candle, the
-// plank with its tally bands, bread and salt. Niche, door, candle, grain row and still life are lifted
-// from priveghi_prototype_v4.html; the tally band and the Bride's door are the dead's table's (R61).
+// plank with its tally bands, bread and salt; Spaima's tells and the soroc dishes. Niche, door,
+// candle, grain row and still life are lifted from priveghi_prototype_v4.html; the tally band and
+// the Bride's door are the dead's table's (R61); the soroc dish is the watcher's markSVG, ported.
 import type { Amintire } from '../engine';
 import { ART } from './art';
 import { hemPattern, type Hem } from './card';
@@ -154,4 +155,61 @@ export function tallyBandSVG(hem: Hem, amintiri: Amintire[], standingM: number, 
   });
   if (amintiri.length > 7) marks += `<path d="M106 5 V11 M103 8 H109" stroke="${C.soot}" stroke-width="1.6"/>`;
   return `<svg viewBox="0 0 108 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>${defs ?? ''}</defs><g opacity="${ink}">${bandSvg}</g>${marks}</svg>`;
+}
+
+export type Tell = 'dog' | 'garlic' | 'horse' | 'lintel';
+
+/** A head of garlic, stem up: limewash in a soot contour, two clove lines; `r` is its half-width. */
+function bulb(cx: number, cy: number, r: number): string {
+  const k = r / 7;
+  const d = `M${cx} ${cy - 6 * k} Q${cx - 7 * k} ${cy - 2 * k} ${cx - 7 * k} ${cy + 4 * k} Q${cx - 7 * k} ${cy + 10 * k} ${cx} ${cy + 10 * k} Q${cx + 7 * k} ${cy + 10 * k} ${cx + 7 * k} ${cy + 4 * k} Q${cx + 7 * k} ${cy - 2 * k} ${cx} ${cy - 6 * k} Z`;
+  return `<path d="M${cx} ${cy - 6 * k} V${cy - 11 * k}" stroke="${C.soot}" stroke-width="${(1.4 * k).toFixed(2)}"/><path d="${d}" fill="${C.lime}" stroke="${C.soot}" stroke-width="${(1.4 * k).toFixed(2)}" stroke-linejoin="round"/><path d="M${cx - 2.6 * k} ${cy + 1 * k} V${cy + 8.5 * k} M${cx + 2.6 * k} ${cy + 1 * k} V${cy + 8.5 * k}" stroke="${C.soot}" stroke-width="${(0.8 * k).toFixed(2)}" opacity=".7"/>`;
+}
+
+/**
+ * Spaima's tells (R69), in the icon grammar, drawn over the card they belong to: the dog tied on
+ * Curte, garlic on Casa, the horse on Sat, and the garland of seven bulbs along ARATA-TE's lintel.
+ */
+export function tellSVG(kind: Tell): string {
+  switch (kind) {
+    // a dog sitting, in profile, facing the house; its rope runs to a stake behind it
+    case 'dog':
+      return `<svg viewBox="0 0 60 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="55" y="6" width="4" height="37" fill="${C.woodMid}" stroke="${C.soot}" stroke-width="1.2"/>
+    <path d="M18 18 Q38 8 57 8" fill="none" stroke="${C.woodLight}" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="15" cy="12" r="7" fill="${C.soot}"/><path d="M10 8 L1 12 L1 17 L10 18 Z" fill="${C.soot}"/><path d="M16 5 L23 6 L23 18 L18 15 Z" fill="${C.soot}"/>
+    <path d="M12 18 L20 17 Q34 17 42 26 Q48 34 46 43 L31 43 L29 37 L27 43 L17 43 L16 24 Z" fill="${C.soot}"/>
+    <path d="M45 40 Q53 38 52 29" fill="none" stroke="${C.soot}" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M13 18.5 L19 17.5" stroke="${C.waxDim}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+    // three heads braided by their stems on one cord, hung at the door
+    case 'garlic':
+      return `<svg viewBox="0 0 40 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M20 0 L14 9 L26 23 L15 38 L21 56" fill="none" stroke="${C.woodLight}" stroke-width="2"/><path d="M20 0 L14 9 L26 23 L15 38 L21 56" fill="none" stroke="${C.soot}" stroke-width="2" stroke-dasharray="3 3"/>
+    ${bulb(14, 16, 7)}${bulb(26, 30, 7)}${bulb(15, 45, 7)}</svg>`;
+    // a horse's head and neck in profile, the mane a jagged edge, one wax eye
+    case 'horse':
+      return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M34 64 L34 52 Q28 48 22 47 L10 48 Q3 46 4 40 L8 32 Q16 22 28 18 L40 14 L38 4 L46 12 L50 3 L52 13 L58 18 L54 23 L62 30 L56 35 L64 43 L58 47 L64 55 L62 64 Z" fill="${C.soot}" stroke-linejoin="round"/>
+    <circle cx="34" cy="26" r="2.8" fill="${C.wax}"/><circle cx="34.6" cy="26.2" r="1.2" fill="${C.soot}"/></svg>`;
+    // seven small heads strung on a cord that sags along the lintel
+    case 'lintel': {
+      const cord = (t: number) => (1 - t) * (1 - t) * 3 + 2 * (1 - t) * t * 11 + t * t * 3;
+      let bulbs = '';
+      for (let i = 0; i < 7; i++) {
+        const x = 10 + i * (100 / 6);
+        bulbs += bulb(x, cord((x - 2) / 116) + 4.6, 3.6);
+      }
+      return `<svg viewBox="0 0 120 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M2 3 Q60 11 118 3" fill="none" stroke="${C.woodLight}" stroke-width="1.6"/><path d="M2 3 Q60 11 118 3" fill="none" stroke="${C.soot}" stroke-width="1.6" stroke-dasharray="2.5 2.5"/>${bulbs}</svg>`;
+    }
+  }
+}
+
+/** A memorial dish on the plank: empty while the soroc waits, coliva with a cross when it was held, dark when missed. */
+export function sorocSVG(state: 'waiting' | 'held' | 'missed'): string {
+  const dish = `<path d="M3 22 Q22 30 41 22 L37 30 Q22 35 7 30 Z" fill="${state === 'missed' ? C.soot : C.earth}" stroke="${C.soot}" stroke-width="1.4"/>`;
+  const heap = state === 'held'
+    ? `<path d="M6 22 Q22 4 38 22 Z" fill="${C.lime}" stroke="${C.soot}" stroke-width="1.4"/><path d="M22 11 V20 M18 15.5 H26" stroke="${C.soot}" stroke-width="1.6"/>`
+    : '';
+  return `<svg viewBox="0 0 44 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${heap}${dish}</svg>`;
 }

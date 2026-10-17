@@ -1,17 +1,19 @@
 // The page: paper beside the table (desktop), below it (iPad), folded over its right side on a
 // phone. It carries the day; Uitare and the forecast; Spaima; Putere as drops; the tally as five
 // rows; the card in focus (name, kinds, owner, state, the match with the Dor in hand); the last
-// line the table spoke; at an ending the ending's title (charter section 5). Words only from
-// src/strings.ts; states are grains, strokes and counts, never words.
+// line the table spoke; the soroc dishes (step 4); at an ending the ending's title, after the
+// last soroc's result and the last line (charter section 5). Words only from src/strings.ts;
+// states are grains, strokes, dishes and counts, never words.
 import type { Card, View } from '../engine';
 import { SOURCES } from '../engine';
 import { hemOfPerson, nameOf, ownerName } from '../render/catalog';
-import { brideSVG, grainRowSVG, pipsSVG, tallyBandSVG } from '../render/furniture';
+import { brideSVG, grainRowSVG, pipsSVG, sorocSVG, tallyBandSVG } from '../render/furniture';
 import { C } from '../render/palette';
-import { AMINTIRE, DAYS, ENDING, FEL, PERSON, PREVESTIRE, PUTERE, SPAIMA, UITARE } from '../strings';
+import { sorocDays, sorocState } from '../render/table';
+import { AMINTIRE, DAYS, ENDING, FEL, PERSON, PREVESTIRE, PUTERE, SOROC, SPAIMA, UITARE } from '../strings';
 
-/** What the page is about: the cards of a stack, or the tally. */
-export type Focus = { ids: number[] } | { tally: true } | null;
+/** What the page is about: the cards of a stack, the tally, or the soroc dishes. */
+export type Focus = { ids: number[] } | { tally: true } | { soroace: true } | null;
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 /** The kind labels and the owner, joined; a person is their own owner and is not named twice (R93). */
@@ -80,10 +82,27 @@ export class Page {
     ).join('');
   }
 
+  /** The soroc dishes as the engine's stats have them: the label, then one dish per memorial day the demo reaches. */
+  private soroaceRow(v: View): string {
+    const dishes = sorocDays(v)
+      .map((d) => `<span class="soroc" data-soroc="${d}" data-state="${sorocState(v, d)}">${sorocSVG(sorocState(v, d))}</span>`)
+      .join('');
+    return `<div class="soroace"><span class="n">${esc(SOROC.ro)}</span>${dishes}</div>`;
+  }
+
   /** The strip (charter section 4): the name, the kind labels and the owner, the state, the match. */
   strip(v: View, f: Focus, inHand: number | null): string {
     if (!f) return '';
     if ('tally' in f) return this.tallyRows(v, 'row');
+    // the dishes: the memorial's name, then each of its days with its dish
+    if ('soroace' in f) {
+      return (
+        `<span class="nm">${esc(SOROC.ro)}</span>` +
+        sorocDays(v)
+          .map((d) => `<span class="row"><span class="n">${esc(DAYS[Math.min(d, DAYS.length) - 1].ro)}</span><span class="dish">${sorocSVG(sorocState(v, d))}</span></span>`)
+          .join('')
+      );
+    }
     const cards = v.cards.filter((c) => f.ids.includes(c.id));
     const c = cards[0];
     if (!c) return '';
@@ -108,11 +127,16 @@ export class Page {
       this.el.dataset.phase = v.phase;
       return;
     }
-    // an ending: its title alone (Uitare says nothing); the Bride stays in the door for Nunta
+    // an ending: the last soroc's dishes and the last line first, then its title; Uitare says nothing
+    // (the page is blank but the day); the Bride stays in the door for Nunta
     if (v.ending && v.phase === 'ended') {
-      const title = v.ending === 'uitare' ? '' : `<div class="title">${esc(ENDING[v.ending].ro)}</div>`;
-      const bride = v.ending === 'nunta' ? `<div class="bride">${brideSVG()}</div>` : '';
-      this.el.innerHTML = `${day}<div class="end" data-ending="${v.ending}">${title}${bride}</div>`;
+      if (v.ending === 'uitare') {
+        this.el.innerHTML = day;
+      } else {
+        const said = this.said ? `<p class="said">${esc(this.said)}</p>` : '';
+        const bride = v.ending === 'nunta' ? `<div class="bride">${brideSVG()}</div>` : '';
+        this.el.innerHTML = `${day}${this.soroaceRow(v)}${said}<div class="end" data-ending="${v.ending}"><div class="title">${esc(ENDING[v.ending].ro)}</div>${bride}</div>`;
+      }
       this.el.dataset.phase = v.phase;
       return;
     }
@@ -125,9 +149,7 @@ export class Page {
     const tally = `<div class="tally-rows">${this.tallyRows(v, 'row')}</div>`;
     let focus = '';
     const f = this.focus;
-    if (f && 'tally' in f) {
-      focus = '';
-    } else if (f) {
+    if (f && 'ids' in f) {
       const cards = v.cards.filter((c) => f.ids.includes(c.id));
       const c = cards[0];
       if (c) {
@@ -139,7 +161,7 @@ export class Page {
       }
     }
     const said = this.said ? `<p class="said">${esc(this.said)}</p>` : '';
-    this.el.innerHTML = day + counts + tally + focus + said;
+    this.el.innerHTML = day + counts + this.soroaceRow(v) + tally + focus + said;
     this.el.dataset.phase = v.phase;
   }
 }
