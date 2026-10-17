@@ -46,8 +46,9 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stage .cloth .border { position: absolute; left: 20px; top: 20px; width: calc(100% - 40px); height: calc(100% - 40px); pointer-events: none; }
 .stage .pool { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; transition-property: opacity; transition-timing-function: ease; }
 .stage .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 62% 78%, transparent 30%, rgba(17, 14, 11, .55) 75%, rgba(17, 14, 11, .85) 100%); }
-/* dusk (R67): the table darkens while it is night; the duration is TUNING.dusk_fade_ms, set inline on the dusk and the pool */
-.stage .dusk { position: absolute; inset: 0; pointer-events: none; background: rgba(17, 14, 11, 0); transition-property: background; transition-timing-function: ease; }
+/* dusk (R67): the table darkens while it is night; the duration is TUNING.dusk_fade_ms, set inline on the dusk and the pool.
+   It lies above the rows' spread-hand z-indices (R78, R88) and under the lifted card (20), the pieces (21), the paper (22). */
+.stage .dusk { position: absolute; inset: 0; z-index: 19; pointer-events: none; background: rgba(17, 14, 11, 0); transition-property: background; transition-timing-function: ease; }
 .stage .dusk.on { background: rgba(17, 14, 11, .5); }
 
 /* the far side: another seat, dark, opened toward you (inverse perspective) */
@@ -115,8 +116,16 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 /* small things a thumb must still find: at least 44 CSS px on the phone */
 .cards .tied::after { content: ''; position: absolute; inset: -22px -16px; }
 .daytag::after { content: ''; position: absolute; inset: -30px -24px; }
-.lifted { transition: none !important; z-index: 20; cursor: grabbing; }
+.lifted { transition: none !important; z-index: 20 !important; cursor: grabbing; }
 .lifted svg { filter: drop-shadow(6px 9px 3px var(--soot-smudge)) !important; }
+/* a card picked up by the keyboard is told like the Dor in hand: by contour weight */
+.picked .face-contour { stroke-width: 3.2; }
+/* a target the engine would take answers by contour weight only (charter section 4); the door's frame in step 4 */
+.stack.accept .face-contour, .cards .tied.accept .face-contour { stroke-width: 4.2; }
+/* a guttered Dor fades before the stacks re-flow (step 3); the duration is TUNING.gone_ms, set on the stage */
+.stack.gone, .cards .tied.gone { opacity: 0; transition: opacity var(--gone-ms, .9s) ease; pointer-events: none; }
+/* nothing on the rows answers a press while a play's paper covers the table */
+.stage.playing .cards > .stack, .stage.playing .cards > .tied { pointer-events: none; }
 
 /* the plank: your card, the five tally bands, the forecast tag (sizes from layout.ts) */
 .plank { position: absolute; }
