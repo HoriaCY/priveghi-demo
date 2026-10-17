@@ -203,6 +203,9 @@ export class Table {
     at(this.candle, CANDLE.x, CANDLE.y);
     this.candle.style.width = `${CANDLE.w}px`;
     this.candle.style.height = `${CANDLE.h}px`;
+    // the boot (step 5): the candle is lit at your head and settles into its place by the cloth's edge
+    this.candle.style.setProperty('--boot-dx', `${YOU_AT.x + 30 - CANDLE.x}px`);
+    this.candle.style.setProperty('--boot-dy', `${YOU_AT.y - 6 - CANDLE.y}px`);
     const label = el('candle-label', STINGE.ro);
     at(label, CANDLE_LABEL.x, CANDLE_LABEL.y);
     label.style.width = `${CANDLE_LABEL.w}px`;

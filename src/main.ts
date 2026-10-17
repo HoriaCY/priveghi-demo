@@ -2,6 +2,8 @@
 // the clock ticks; the wake is saved on this device only. Step 3: the drags that commit, the plays,
 // STINGE and rest by touch, the close's visible beats. Step 4: the dream's deps, her door (TRECI by
 // a drag, the refusal by a tap on the page), another wake after an ending, the dishes' strip.
+// Step 5: the boot in the dark (a touch strikes the match, a second brings you home), the fade and
+// the stake, the Bride's dimming, the save at every beat, another wake landing in the dark.
 import './render/style.css';
 import { Wake } from './engine';
 import type { Action, Card, Commit, Entry, View } from './engine';
@@ -15,7 +17,7 @@ import { fitStage } from './render/fit';
 import { rotateSVG } from './render/furniture';
 import { CANDLE, DOOR_X, FORECAST, PUTERE, ROW_CLOTH, ROW_KIT, STILL_LIFE, TALLY, nicheX } from './render/layout';
 import { Table, type Target } from './render/table';
-import { AMINTIRE, LINES, POMENIRE, TYPE_TEST } from './strings';
+import { AMINTIRE, BROUGHT_HOME, LINES, POMENIRE, TYPE_TEST } from './strings';
 import { TUNING } from './tuning';
 
 const params = new URLSearchParams(location.search);
@@ -71,9 +73,9 @@ function annotate(stage: HTMLElement): void {
 function sound(e: Entry): void {
   switch (e.event) {
     case 'brought_home':
-      SOUND.match();
-      window.setTimeout(() => SOUND.thread(), 250);
-      window.setTimeout(() => SOUND.toaca(), 500);
+      // the match was struck at the first touch; the thread, the toaca and the chime as the pool opens
+      SOUND.thread();
+      window.setTimeout(() => SOUND.toaca(), 250);
       window.setTimeout(() => SOUND.chime(), TUNING.pool_open_ms);
       return;
     case 'precue':
@@ -145,13 +147,11 @@ async function openWake(now: number): Promise<Wake> {
   const loaded = saved ? await Wake.load(saved) : null;
   if (loaded) {
     loaded.apply({ type: 'resume' }, now);
-    if (loaded.state().phase === 'boot') loaded.apply({ type: 'begin' }, now);
     return loaded;
   }
+  // a fresh wake waits in the dark for the first touch (the boot); a review fixture begins on its own
   const wake = await Wake.begin(now);
-  // until step 5 there is no boot sequence: they bring you home at once
   if (isFixture(fixture)) applyFixture(wake, fixture, now);
-  else wake.apply({ type: 'begin' }, now);
   return wake;
 }
 
@@ -180,6 +180,8 @@ async function main(): Promise<void> {
   rotate.innerHTML = rotateSVG();
   const table = new Table(stage);
   stage.style.setProperty('--gone-ms', `${TUNING.gone_ms}ms`);
+  stage.style.setProperty('--fade-s', `${TUNING.fade_s}s`);
+  stage.style.setProperty('--stake-ms', `${TUNING.stake_ms}ms`);
   const pageEl = document.createElement('section');
   pageEl.className = 'page';
   pageEl.setAttribute('aria-live', 'polite');
@@ -222,6 +224,9 @@ async function main(): Promise<void> {
   let view: View = wake.state();
   let seen = view.log.length;
   let clock = 0;
+  /** The boot: the match has been struck (the troita's small pool is open); the next touch brings you home. */
+  let lit = false;
+  let bootTimer = 0;
   /** The play whose paper is open; closed by the renderer when the day's close resolved its act. */
   let play: Play | null = null;
   let resolving = false;
@@ -264,7 +269,13 @@ async function main(): Promise<void> {
     const fresh = v.log.slice(seen);
     seen = v.log.length;
     stage.classList.toggle('booting', v.phase === 'boot');
+    stage.classList.toggle('dark0', v.phase === 'boot' && !lit);
     stage.classList.toggle('playing', Boolean(v.commit));
+    // the endings' marks on the table (chapter section 10): the Bride dims every gold but the troita's;
+    // Uitare fades the table to Alb de Var; the stake's shadow falls on the sheet
+    stage.classList.toggle('bride', v.phase === 'door' || (v.phase === 'ended' && v.ending === 'nunta'));
+    stage.classList.toggle('fade', v.phase === 'ended' && v.ending === 'uitare');
+    stage.classList.toggle('stake', v.phase === 'ended' && v.ending === 'tarus');
     // the day's close resolves an open play as the skip: the paper is closed here
     if (play && !v.commit && !resolving) {
       play.close();
@@ -377,7 +388,7 @@ async function main(): Promise<void> {
     return { type: 'place', dor: id, on: t.card };
   };
 
-  /** Another wake, a new dead (R65): the engine lands in the dark, and until step 5 brings the boot they bring you home at once (R83). */
+  /** Another wake, a new dead (R65): the engine lands in the dark, where the boot waits for a touch (R118 amended). */
   const again = () => {
     play?.close();
     play = null;
@@ -385,10 +396,33 @@ async function main(): Promise<void> {
     page.inHand = null;
     page.say(null);
     seen = 0;
+    lit = false;
+    window.clearTimeout(bootTimer);
     pageEl.classList.remove('open');
     act({ type: 'again' });
-    act({ type: 'begin' });
+    save();
+  };
+  /** The boot's second touch, or its wait: they bring you home; the candle lights at your head; one line when the pool is open. */
+  const begin = () => {
+    window.clearTimeout(bootTimer);
+    if (view.phase !== 'boot' || !lit) return;
+    if (!act({ type: 'begin' })) return;
     startClock();
+    window.setTimeout(() => {
+      if (view.phase !== 'wake' || view.day !== 1) return;
+      page.say(BROUGHT_HOME.ro);
+      page.render(view);
+      say(`<span>${text(BROUGHT_HOME.ro)}</span>`);
+    }, TUNING.pool_open_ms);
+  };
+  /** The boot's first touch: the match is struck and the troita's small pool opens; the next touch, or the wait, brings you home. */
+  const strike = () => {
+    if (view.phase !== 'boot') return;
+    if (lit) return begin();
+    lit = true;
+    SOUND.match();
+    stage.classList.remove('dark0');
+    bootTimer = window.setTimeout(begin, TUNING.boot_wait_ms);
   };
 
   const focusOf = (el: HTMLElement): Focus => {
@@ -458,10 +492,11 @@ async function main(): Promise<void> {
       SOUND.page();
     },
   });
-  // the first touch opens the sound (iOS needs a gesture) and lets the wind in
+  // the first touch opens the sound (iOS needs a gesture) and lets the wind in; in the dark it strikes the match
   const firstTouch = () => {
     unlockAudio();
     startAmbience();
+    if (view.phase === 'boot') strike();
   };
   stage.addEventListener('pointerdown', firstTouch, { capture: true });
   stage.addEventListener('keydown', firstTouch, { capture: true });

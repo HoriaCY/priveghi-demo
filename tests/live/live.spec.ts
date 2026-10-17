@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('the deployed demo opens the table, asks nothing of any other host, and loads its own fonts', async ({ page, baseURL }) => {
+test('the deployed demo boots in the dark, asks nothing of any other host, and loads its own fonts', async ({ page, baseURL }) => {
   const origin = new URL(baseURL!).origin;
   const errors: string[] = [];
   const hosts = new Set<string>();
@@ -10,8 +10,7 @@ test('the deployed demo opens the table, asks nothing of any other host, and loa
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto('./?reset');
   await expect(page.locator('body[data-ready="1"]')).toBeAttached();
-  // steps 2-4 have no boot sequence: they bring you home at load; step 5 returns the dark (phase boot)
-  await expect(page.locator('body')).toHaveAttribute('data-phase', 'wake');
+  await expect(page.locator('body')).toHaveAttribute('data-phase', 'boot');
   const fonts = await page.evaluate(async () => {
     await document.fonts.ready;
     return [...document.fonts].filter((f) => f.status === 'loaded').length;
