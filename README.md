@@ -11,8 +11,8 @@ landscape, phone first, also on tablets and desktops. Rules in Rust compiled to 
 ## On a phone
 
 1. Open the link in Safari, and turn the phone sideways.
-2. They bring you home: the table opens on day one with the candle lit at your head. (The boot in
-   the dark, a match struck at the troiță, returns at step 5 of the turnover below.)
+2. Touch the dark: a match is struck at the troiță. Touch again, and they bring you home: the candle
+   is lit at your head, the table opens, one line is said.
 3. For full screen: Share → Add to Home Screen, then open Priveghi from its icon.
 
 The wake is saved in this browser only; add `?reset` to the link to begin again. `?seed` is retired
@@ -21,11 +21,9 @@ and the days, so every wake deals the same first table and differs only by what 
 
 ## How it plays (the game itself has no instructions)
 
-What the branch does today, step 4 of the turnover: the table is drawn from the engine, the clock
-runs, cards answer a tap and a drag, the knock and the dream are played, the skip takes the blame,
-the dead can blow the candle out and rest, the priest comes and the village tells its fright, the
-memorial meals are set, the body is buried, and the wake ends on one of five pages. The boot in the
-dark comes with step 5.
+What the branch does today, step 5 of the turnover: the whole nine-day wake, from the dark to one
+of five endings, with the page, the saves and the three compositions. Step 6 polishes and lets the
+watcher's engine go.
 
 - A day is 60 seconds. The candle at the cloth's head burns down in real time; at the fortieth
   second dusk falls, the table darkens and the living at the table fall asleep; the day closes at
@@ -204,6 +202,12 @@ step at a time, each on its own branch; the site above plays what `main` holds.
   the log: the guttered Dor's fade, the Pomenire strip, the seal and the tally's mark, the dusk kept
   on a dark dawn; the dusk over the cards again at night. The `played` fixture. Rulings R96–R114. Not yet: Vis, the priest's cords and
   Spaimă's tells, TRECI in her door, the boot in the dark, the endings' pages beyond their title.
+- **Step 5 (done):** the boot in the dark (a touch strikes the match, a second brings you home,
+  the candle lit at your head settling into its place, one line said as the pool opens); the Uitare
+  ending's fade and silence, the stake's shadow, the Bride's dimming; the wake saved at the boot,
+  every close, every ending and when the tab is hidden, resumed on reload, cleared by `?reset`; a
+  hidden tab pauses the clock; the page composed beside, below and over the table; every small
+  thing a thumb must find at 44 CSS px on the phone. Rulings R133–R138.
 - **Step 4 (done):** the dream and the vigil nights' mask; the priest's cords and Spaimă's tells (the
   dog, the garlic on the house and on ARATĂ-TE's lintel, the horse; renderer thresholds in
   `src/tuning.ts`, unsimulated); the soroc dishes on the far side with their strip and the page's row;
@@ -213,7 +217,8 @@ step at a time, each on its own branch; the site above plays what `main` holds.
   another wake by a tap on an ended page (begun at once until step 5's boot); your card gone
   through the door at Nuntă. The `soroc` and `ninth` fixtures. Rulings R115–R132. Not yet: the boot
   in the dark, the Uitare ending's fade.
-- Steps 5–6: the page and the boot; polish and the watcher's leaving.
+- Step 6: polish against the law, privacy, the final pictures, and the watcher's engine, tests and
+  screenshots leaving.
 
 ## Design
 
