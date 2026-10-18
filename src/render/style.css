@@ -46,9 +46,15 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stage .cloth .border { position: absolute; left: 20px; top: 20px; width: calc(100% - 40px); height: calc(100% - 40px); pointer-events: none; }
 .stage .pool { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; transition-property: opacity; transition-timing-function: ease; }
 .stage .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 62% 78%, transparent 30%, rgba(17, 14, 11, .55) 75%, rgba(17, 14, 11, .85) 100%); }
-/* dusk (R67): the table darkens while it is night; the duration is TUNING.dusk_fade_ms, set inline on the dusk and the pool */
-.stage .dusk { position: absolute; inset: 0; pointer-events: none; background: rgba(17, 14, 11, 0); transition-property: background; transition-timing-function: ease; }
+/* dusk (R67): the table darkens while it is night; the duration is TUNING.dusk_fade_ms, set inline on the dusk and the pool.
+   It lies above the rows' spread-hand z-indices (R78, R88) and under the lifted card (20), the pieces (21), the paper (22). */
+.stage .dusk { position: absolute; inset: 0; z-index: 19; pointer-events: none; background: rgba(17, 14, 11, 0); transition-property: background; transition-timing-function: ease; }
 .stage .dusk.on { background: rgba(17, 14, 11, .5); }
+
+/* the soroc dishes (step 4): the living's memorial meal on their side of the table, at the far seat's low brightness;
+   one tap target, reaching 44 CSS px on the phone through its hit area */
+.stage .soroace { position: absolute; cursor: pointer; filter: brightness(.45); }
+.stage .soroace .soroc { position: absolute; top: 0; }
 
 /* the far side: another seat, dark, opened toward you (inverse perspective) */
 .stage .farside {
@@ -72,12 +78,22 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 /* the priest's cords (step 4): hidden until the niche is locked */
 .verb .cord { position: absolute; left: 0; top: 0; width: 150px; height: 210px; display: none; pointer-events: none; }
 .verb.locked .cord { display: block; }
-.verb:focus-visible, .flame-hit:focus-visible, .tally:focus-visible, .daytag:focus-visible, .darkdoor:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
+/* garlic across ARATA-TE's lintel from Spaima 4 (R69, step 4): over the niche's lintel band (y 26 to 46 of its 150x210 frame) */
+.verb .tell { position: absolute; left: 12px; top: 24px; width: 126px; height: 20px; pointer-events: none; }
+.verb:focus-visible, .flame-hit:focus-visible, .tally:focus-visible, .daytag:focus-visible, .darkdoor:focus-visible, .soroace:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
 .darkdoor { position: absolute; width: 60px; height: 236px; }
 .darkdoor > svg { height: 210px; }
 /* the Bride stands in the door (phase door, the Nunta ending): the cununie, the only blue */
 .darkdoor .bridefig { position: absolute; left: 10px; top: 46px; width: 40px; height: 158px; display: none; pointer-events: none; }
 .darkdoor.bride .bridefig { display: block; }
+/* TRECI: the door's verb, written under it only while she stands and the door answers (phase door) */
+.darkdoor .vname {
+  position: absolute; left: -9px; right: -9px; top: 206px; text-align: center; font-family: var(--display); font-weight: 500;
+  font-size: 17px; color: var(--wax); line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; display: none;
+}
+.darkdoor.treci .vname { display: block; }
+/* the door answers your card by contour weight: its frame's strokes, like a card's contour */
+.darkdoor.accept > svg rect { stroke-width: 4; }
 
 /* cards: one element per stack, in a layer above the pool and the vignette (as in the prototype) */
 .stage .cards { position: absolute; inset: 0; pointer-events: none; }
@@ -102,6 +118,11 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stack[data-resting="1"] { opacity: .5; }
 .stack[data-asleep="1"] { opacity: .55; }
 .stack.you { cursor: default; }
+.stack.you[data-drag] { cursor: grab; }
+/* Spaima's tells (R69, step 4): a piece over a place's face, at its lower left above the hem band (y 117 of the 168
+   frame is 105 here): the edge a spread hand always shows (R93), where the brief's lower right goes under the next card */
+.stack .face .tell { position: absolute; left: 7px; top: 60px; width: 40px; height: 40px; pointer-events: none; }
+.stack .face .tell svg { filter: none; }
 .stack.selected .face-contour, .stack:focus-visible .face-contour, .cards .tied.selected .face-contour { stroke-width: 3.2; }
 .stack:focus-visible { outline: none; }
 .cards .heart { position: absolute; width: 108px; height: 151px; }
@@ -115,8 +136,16 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 /* small things a thumb must still find: at least 44 CSS px on the phone */
 .cards .tied::after { content: ''; position: absolute; inset: -22px -16px; }
 .daytag::after { content: ''; position: absolute; inset: -30px -24px; }
-.lifted { transition: none !important; z-index: 20; cursor: grabbing; }
+.lifted { transition: none !important; z-index: 20 !important; cursor: grabbing; }
 .lifted svg { filter: drop-shadow(6px 9px 3px var(--soot-smudge)) !important; }
+/* a card picked up by the keyboard is told like the Dor in hand: by contour weight */
+.picked .face-contour { stroke-width: 3.2; }
+/* a target the engine would take answers by contour weight only (charter section 4); the door's frame in step 4 */
+.stack.accept .face-contour, .cards .tied.accept .face-contour { stroke-width: 4.2; }
+/* a guttered Dor fades before the stacks re-flow (step 3); the duration is TUNING.gone_ms, set on the stage */
+.stack.gone, .cards .tied.gone { opacity: 0; transition: opacity var(--gone-ms, .9s) ease; pointer-events: none; }
+/* nothing on the rows answers a press while a play's paper covers the table */
+.stage.playing .cards > .stack, .stage.playing .cards > .tied { pointer-events: none; }
 
 /* the plank: your card, the five tally bands, the forecast tag (sizes from layout.ts) */
 .plank { position: absolute; }
@@ -168,11 +197,35 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .toast .band, .page .band { display: inline-block; width: 72px; height: 10px; }
 .toast .n, .page .n { font: 18px var(--label); letter-spacing: .1em; }
 
-/* step 5: the boot's darkness over everything but the troita's small pool */
+/* step 5: the boot. The dark frame (dark0) until the first touch strikes the match; then the troita's small pool;
+   the second touch brings you home: the night layer fades over 1.8 s and the candle, lit at your head on the plank,
+   settles into its place by the cloth's edge. Zero text until then. */
 .night { position: absolute; inset: 0; pointer-events: none; z-index: 25; opacity: 0; transition: opacity 1.8s ease; }
 .booting .night { opacity: 1; transition: none; }
-.booting .cards > :not(.tied), .booting .flame-hit, .booting .daytag { pointer-events: none; }
-.booting .daytag, .booting .vname, .booting .forecast, #stage.booting ~ .page { visibility: hidden !important; }
+.booting:not(.dark0) .night { --hole: 110px; }
+.dark0 .night { background: rgba(17, 14, 11, .985) !important; }
+.dark0 .verb[data-niche="odihneste"] .flame { visibility: hidden; }
+.booting .cards > *, .booting .flame-hit, .booting .daytag, .booting .tally, .booting .soroace, .booting .verb, .booting .darkdoor { pointer-events: none; }
+.booting .daytag, .booting .vname, .booting .forecast, .booting .candle-label, .booting .putere, #stage.booting ~ .page { visibility: hidden !important; }
+.maincandle { transition: opacity 1.8s ease, transform 1.8s cubic-bezier(.2, 0, 0, 1); }
+.booting .maincandle { opacity: 0; transform: translate(var(--boot-dx, -900px), var(--boot-dy, -20px)) scale(.6); transition: none; }
+
+/* the endings on the table (chapter section 10): the Bride dims every gold but the troita's; Uitare fades the table to
+   Alb de Var over TUNING.fade_s (set on the stage); the stake's shadow falls across the sheet over TUNING.stake_ms */
+.bride .cards > *, .bride .verb:not([data-niche="odihneste"]), .bride .maincandle, .bride .stilllife, .bride .farcandle, .bride .tally, .bride .soroace {
+  filter: saturate(.45) brightness(.7) !important; transition: filter 2.4s ease;
+}
+.stage.fade { animation: fade var(--fade-s, 6s) ease-in forwards; }
+@keyframes fade { to { filter: saturate(0) brightness(1.9); } }
+.stage.stake::after {
+  content: ''; position: absolute; left: 118px; top: 336px; width: 26px; height: 290px; background: rgba(23, 19, 16, .85);
+  transform: rotate(-18deg); z-index: 26; pointer-events: none; animation: stakein var(--stake-ms, 600ms) ease-out forwards;
+}
+@keyframes stakein { from { opacity: 0; } to { opacity: 1; } }
+/* a thumb must find the dishes and the tied cards on the phone (R44, R137): the dishes reach 34 up and 30 down (the
+   viewport's top edge is near); the tied slots' areas touch, 38 CSS px each */
+.stage .soroace::after { content: ''; position: absolute; inset: -34px -19px -30px; }
+.cards .tied::after { inset: -22px -20px; }
 
 /* the page: paper beside the table, below it, or over it on a phone */
 .page {
@@ -190,14 +243,22 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .page .tally-rows { display: flex; flex-direction: column; gap: 2px; }
 .page .tally-rows .row { display: flex; align-items: center; gap: 10px; }
 .page .tally-rows .row .nm { font: 600 17px/1.3 var(--display); min-width: 120px; }
+.page.below .tally-rows { flex-direction: row; flex-wrap: wrap; column-gap: 24px; row-gap: 2px; }
+.page.below .tally-rows .row { width: calc(50% - 12px); }
 .page.below .tally-rows .row .nm { min-width: 110px; }
 .page .focus .nm { font: 600 24px/1.2 var(--display); }
 .page .sub { font: 18px var(--label); font-variant: small-caps; letter-spacing: .06em; color: var(--ink-dim); }
 .page .asp { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
 .page .match { font: 18px var(--label); font-variant: small-caps; letter-spacing: .04em; }
 .page .said { margin: 0; font-style: italic; }
+/* the dishes on the page and on the strip: the label, then one dish per memorial day */
+.page .soroace { display: flex; align-items: center; gap: 8px; }
+.page .soroace .soroc { display: inline-block; width: 34px; height: 28px; }
+.toast .dish { display: inline-block; width: 30px; height: 24px; }
 .page .end .title { font: 600 30px/1.2 var(--display); margin-bottom: 8px; }
 .page .end .bride, .page .door .bride { width: 76px; height: 106px; }
+/* the Bride's svg takes her box on the page (outside the stage no rule sizes an svg; unsized it ran past the band below the table) */
+.page .bride svg { display: block; width: 100%; height: 100%; }
 
 /* the flame breathes in two irregular frames; nothing else moves on its own */
 .flame { transform-origin: 50% 100%; animation: breathe 1.3s steps(1, end) infinite; }
@@ -236,6 +297,8 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   .stack { transition-duration: .09s; }
   .toast { transition-duration: .09s; }
   .night, .maincandle { transition-duration: .2s; }
+  .bride .cards > * { transition-duration: .2s; }
+  .stage.fade { animation-duration: .4s; }
   .stage .dusk, .stage .pool { transition-duration: .2s !important; }
 }
 

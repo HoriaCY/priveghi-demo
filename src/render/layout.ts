@@ -34,6 +34,8 @@ export const FLAME_HIT = 90;
 export const PUTERE = { x: 1144, y: 584, w: 64, h: 14 };
 /** Bread and salt (R13), in the corner by the candle. */
 export const STILL_LIFE = { x: 1040, y: 575, w: 180, h: 120 };
+/** The soroc dishes, one per memorial day, on the far side band's left: the living set the meal on their side of the table (step 4), right of the day tag's thumb area. */
+export const SOROACE = { x: 196, y: 42, w: 44, h: 36, gap: 10 };
 
 /** The one large light: the candle's flame, lower as the wax burns (candleSVG's geometry). */
 export function flameAt(frac: number): { x: number; y: number } {
