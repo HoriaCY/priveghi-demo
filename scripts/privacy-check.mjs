@@ -18,8 +18,8 @@ const sh = (cmd, args) => {
   }
 };
 
-const BINARY = /\.(png|jpe?g|gif|webp|ico|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|wasm|psd|ai|blend|zip)$/i;
-const ASSET = /\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|psd|ai|blend)$/i;
+const BINARY = /\.(png|jpe?g|gif|webp|ico|icns|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|wasm|psd|ai|blend|zip)$/i;
+const ASSET = /\.(png|jpe?g|gif|webp|svg|ico|icns|woff2?|ttf|otf|wav|mp3|ogg|flac|m4a|mp4|webm|psd|ai|blend)$/i;
 const STATIC = /\.(html|js|css|wasm|woff2|svg|png|ico|webmanifest|txt|json)$/i;
 // the account's noreply, Claude's co-author trailer, and GitHub's own committer on merges made there
 const NOREPLY = /^(\d+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com$|^noreply@anthropic\.com$|^noreply@github\.com$/i;
@@ -138,9 +138,11 @@ const check = (item, ok, detail) => rows.push({ item, ok, detail });
   const pathHits = scan([...textFiles(tracked), ...dist], generic);
   const personHits = personalRe ? scan([...textFiles(tracked), ...dist], personalRe) : [];
   const mails = [];
+  // an icon's scale suffix (`128x128@2x.png`, Apple's naming) reads like an address and is not one
+  const scaleSuffix = /@\d+(\.\d+)?x(-\d+)?\.(png|jpe?g|gif|webp|svg|ico|icns)$/i;
   for (const f of textFiles(tracked)) {
     for (const m of text(f).matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) {
-      if (!NOREPLY.test(m[0])) mails.push(`${f}: ${m[0]}`);
+      if (!NOREPLY.test(m[0]) && !scaleSuffix.test(m[0])) mails.push(`${f}: ${m[0]}`);
     }
   }
   // Name the files only: this output can land in a public CI log.
@@ -171,6 +173,137 @@ const check = (item, ok, detail) => rows.push({ item, ok, detail });
     credits.length > 0 && missing.length === 0,
     !credits ? 'CREDITS.md missing' : missing.length ? 'no credits row: ' + missing.join(' ') : `${assets.length} asset files, each with a CREDITS.md row; card art is code-drawn`,
   );
+}
+
+// 11. nothing phones home (the native shell). The law (Horia, 2026-10-18): a native build reports
+// nothing unless the player opts in. Until a crash reporter is ruled in, with its consent gate written
+// into this item, the shell may carry no network plugin, network crate, updater or outside origin.
+{
+  const item = 'nothing phones home (the native shell)';
+  const shellDir = 'src-tauri';
+  if (!existsSync(path.join(root, shellDir))) {
+    check(item, true, 'no native shell in the repo');
+  } else {
+    const bad = [];
+    const caps = [];
+    const readJson = (rel) => {
+      try {
+        return JSON.parse(text(rel));
+      } catch {
+        bad.push(`${rel}: not valid JSON`);
+        return {};
+      }
+    };
+    const shellFiles = tracked.filter((f) => f.startsWith(shellDir + '/') && existsSync(path.join(root, f)));
+
+    // the crates: every dependency table of the shell's Cargo.toml, renamed packages included
+    const CRATE =
+      /^(tauri-plugin-(updater|http|websocket|upload|sentry|aptabase)|sentry|sentry-.*|bugsnag.*|reqwest|ureq|isahc|surf|attohttpc|curl|hyper|tungstenite|tokio-tungstenite|rumqttc|firebase.*|crashlytics.*|appcenter.*|aptabase.*|opentelemetry-otlp)$/i;
+    const uncomment = (line) => {
+      let quote = null;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (quote) quote = ch === quote ? null : quote;
+        else if (ch === '"' || ch === "'") quote = ch;
+        else if (ch === '#') return line.slice(0, i);
+      }
+      return line;
+    };
+    const crates = [];
+    const cargoToml = `${shellDir}/Cargo.toml`;
+    if (!existsSync(path.join(root, cargoToml))) bad.push(`${cargoToml} missing`);
+    else {
+      let inDeps = false;
+      let inOne = false;
+      for (const raw of text(cargoToml).split('\n')) {
+        const line = uncomment(raw).trim();
+        if (!line) continue;
+        const header = line.match(/^\[([^[\]]+)\]$/);
+        if (header) {
+          const m = header[1].trim().match(/(?:^|\.)(?:dev-|build-)?dependencies(?:\.(.+))?$/);
+          inDeps = Boolean(m) && !m[1];
+          inOne = Boolean(m?.[1]);
+          if (m?.[1]) crates.push(m[1].replace(/["']/g, ''));
+          continue;
+        }
+        const key = line.match(/^["']?([A-Za-z0-9_-]+)["']?\s*[=.]/);
+        if (inDeps && key) crates.push(key[1]);
+        if (inDeps || inOne) for (const p of line.matchAll(/\bpackage\s*=\s*["']([^"']+)["']/g)) crates.push(p[1]);
+      }
+    }
+    for (const c of crates.filter((c) => CRATE.test(c))) bad.push(`crate ${c}`);
+
+    // the npm side: a phone-home package in any dependency list of package.json
+    const NPM = /^(@tauri-apps\/plugin-(updater|http|websocket|upload)|@sentry\/.*|@bugsnag\/.*|firebase|@firebase\/.*|@aptabase\/.*)$/i;
+    const pkg = JSON.parse(text('package.json'));
+    for (const list of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+      for (const name of Object.keys(pkg[list] ?? {}).filter((n) => NPM.test(n))) bad.push(`npm ${name}`);
+    }
+
+    // the configs: the base file carries a CSP of local sources only; no file adds an updater, a remote
+    // page or an outside origin, or takes the CSP away
+    const LOCAL_SOURCE =
+      /^('[^']+'|data:|blob:|ipc:|tauri:|asset:|http:\/\/ipc\.localhost|ipc:\/\/localhost|tauri:\/\/localhost|asset:\/\/localhost)$/i;
+    const cspSources = (csp, where) => {
+      const directives =
+        typeof csp === 'string'
+          ? csp
+              .split(';')
+              .map((d) => d.trim().split(/\s+/))
+              .filter((d) => d[0])
+          : Object.entries(csp).map(([k, v]) => [k, ...(Array.isArray(v) ? v : String(v).split(/\s+/))]);
+      if (!directives.some((d) => d[0] === 'default-src')) bad.push(`${where}: no default-src (the page could reach any host)`);
+      for (const [name, ...sources] of directives) {
+        for (const s of sources.filter((s) => s && !LOCAL_SOURCE.test(s))) bad.push(`${where}: ${name} ${s}`);
+      }
+    };
+    const configs = shellFiles.filter((f) => /(^|\/)(tauri|Tauri)(\.[a-z0-9-]+)*\.(conf\.json5?|conf\.toml|toml)$/.test(f));
+    if (!configs.includes(`${shellDir}/tauri.conf.json`)) bad.push(`${shellDir}/tauri.conf.json missing`);
+    for (const f of configs) {
+      if (!f.endsWith('.json')) {
+        bad.push(`${f}: this check reads JSON configs only`);
+        continue;
+      }
+      const conf = readJson(f);
+      const security = conf.app?.security ?? {};
+      if (conf.plugins?.updater !== undefined) bad.push(`${f}: plugins.updater`);
+      if (conf.bundle?.createUpdaterArtifacts && conf.bundle.createUpdaterArtifacts !== false) bad.push(`${f}: bundle.createUpdaterArtifacts`);
+      for (const w of conf.app?.windows ?? []) if (/^[a-z][a-z0-9+.-]*:/i.test(w.url ?? '')) bad.push(`${f}: a window opens ${w.url}`);
+      const base = f === `${shellDir}/tauri.conf.json`;
+      if (base && !security.csp) bad.push(`${f}: no CSP`);
+      if (!base && 'csp' in security && !security.csp) bad.push(`${f}: takes the CSP away`);
+      if (security.csp) cspSources(security.csp, `${f} csp`);
+      if (security.devCsp) cspSources(security.devCsp, `${f} devCsp`);
+      for (const cap of security.capabilities ?? []) if (typeof cap === 'object') caps.push([`${f} (inline capability)`, cap]);
+    }
+
+    // the capabilities: no network, updater or upload permission, and no remote origin given the IPC
+    for (const f of shellFiles.filter((f) => /\/capabilities\/.+\.(json5?|toml)$/i.test(f))) {
+      if (!f.endsWith('.json')) bad.push(`${f}: this check reads JSON capabilities only`);
+      else caps.push([f, readJson(f)]);
+    }
+    for (const [where, cap] of caps) {
+      for (const one of cap.capabilities ?? [cap]) {
+        if (one.remote) bad.push(`${where}: grants a remote origin`);
+        for (const p of one.permissions ?? []) {
+          const id = typeof p === 'string' ? p : (p?.identifier ?? '');
+          if (/^(http|websocket|updater|upload|sentry|aptabase):/i.test(id)) bad.push(`${where}: ${id}`);
+        }
+      }
+    }
+
+    // the signing team: picked in Xcode on Horia's machine, never written into a tracked file
+    const TEAM = /DEVELOPMENT_TEAM(\[[^\]]*\])?"?\s*[=:]\s*"?[A-Z0-9]{10}\b|"?developmentTeam"?\s*[=:]\s*"[^"]+"/;
+    for (const hit of scan(textFiles(tracked), TEAM)) bad.push(`${hit.split(':')[0]}: a signing team id`);
+
+    const plugins = crates.filter((c) => /^tauri-plugin-/.test(c));
+    check(
+      item,
+      bad.length === 0,
+      bad.join('; ') ||
+        `${crates.length} crates named (${crates.join(', ')}), ${plugins.length} plugins; a CSP of local sources only; ${caps.length} capabilities, none networked; no signing team in the repo`,
+    );
+  }
 }
 
 const width = Math.max(...rows.map((r) => r.item.length));

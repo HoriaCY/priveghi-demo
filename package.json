@@ -15,10 +15,18 @@
     "check": "npm run check:strings && npm run check:palette && npm run check:privacy",
     "check:palette": "node scripts/check-palette.mjs",
     "icons": "node scripts/make-icons.mjs",
-    "test:live": "playwright test --config playwright.live.config.ts"
+    "test:live": "playwright test --config playwright.live.config.ts",
+    "tauri": "tauri",
+    "shell:ios:sim": "tauri ios build --target aarch64-sim --debug && npm run shell:sim:install",
+    "shell:ios:review": "tauri ios build --target aarch64-sim --debug --config src-tauri/tauri.review.conf.json && npm run shell:sim:install",
+    "shell:sim:install": "xcrun simctl install booted src-tauri/gen/apple/build/arm64-sim/Priveghi.app && xcrun simctl launch booted io.github.horiacy.priveghi",
+    "shell:ios": "tauri ios run --open",
+    "shell:mac": "tauri build --debug --bundles app && open src-tauri/target/debug/bundle/macos/Priveghi.app",
+    "shell:icons": "node scripts/make-icons.mjs shell && tauri icon src-tauri/icons/app-icon.png --ios-color '#110e0b' && rm -rf src-tauri/icons/android"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",
+    "@tauri-apps/cli": "2.12.3",
     "typescript": "7.0.2",
     "vite": "8.3.4"
   }

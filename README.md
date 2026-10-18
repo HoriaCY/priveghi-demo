@@ -140,6 +140,13 @@ device's localStorage. `npm run check` verifies all of it on every build, along 
 history. Credits and the font licences: [credits](https://horiacy.github.io/priveghi-demo/credits.html)
 and [CREDITS.md](CREDITS.md).
 
+A native build never phones home unless the player opts in. Anything that would (a crash report,
+say) ships off, asks once, and stays off when the player says no, with the features that depend on
+it disabled. Today nothing phones home: the privacy check fails on any network plugin, network
+crate, updater or outside origin in the native shell's CSP, and on a signing team in any tracked
+file. A crash reporter, when one is ruled in, amends that check with its consent gate (Horia,
+2026-10-18).
+
 ## QA
 
 [docs/QA_SCRIPT.md](docs/QA_SCRIPT.md) is the tester's script: an end-to-end winning wake, the five
@@ -170,6 +177,63 @@ Review views: `?fixture=start|night|played|wake|soroc|dark|preot|tarus|door|nint
 fixture is a list of actions the engine plays; it never touches the saved wake), `?still` (the
 clock stops), `?annotate`, `?typetest`, `?sheet` (every card face), `?icon`, `?reset`.
 
+## On your own phone (the native shell)
+
+`src-tauri/` is a Tauri 2 app that packs this same web build (`dist/`: the page, the scripts, the
+WebAssembly engine, the fonts) into an iPhone app: one full-screen web view on the bundled files,
+holding no rule and drawing nothing of its own. It exists so the sits can be made in the container
+a store build would be, before style-lock (Horia, 2026-10-18).
+
+**What changes against the website:** the app holds landscape itself (no rotate card); it is
+offline by construction (every file is inside the app, nothing is fetched); the wake is saved in
+the app's own storage, apart from Safari's (deleting the app is the reset, since there is no address
+bar for `?reset`); there is no browser around the table (no address bar, no browser gestures, no
+scroll bounce). **What does not change:** the same web build and renderer; sound is the same Web
+Audio as on the web, starting on the first touch; no Android yet (there is no Android SDK on this
+Mac); and this is not a store build (a debug build signed with your Apple ID, Safari's Web
+Inspector can attach to it). CI does not build the shell, and `cargo test` at the root never
+compiles it (the workspace excludes `src-tauri`, which keeps its own `Cargo.lock`).
+
+**You need:** a Mac with Xcode (26.4 here) and its iOS simulators; Rust's simulator target
+(`rustup target add aarch64-apple-ios-sim`; the phone's target is added by the first phone build);
+your Apple ID signed into Xcode (Settings → Accounts); the iPhone and its cable, with Developer
+Mode on (Settings → Privacy & Security → Developer Mode, offered after the first install attempt).
+
+```sh
+npm ci
+# in the simulator
+xcrun simctl boot "iPhone 17 Pro" && open -a Simulator
+npm run shell:ios:sim       # builds the web and the app for the simulator, installs it, launches it
+npm run shell:ios:review    # the same app opened on ?fixture=wake&still (the fifth day, the clock still)
+# on your iPhone
+npm run shell:ios           # builds the web, opens Xcode, and waits: keep this terminal open
+```
+
+In Xcode, once: the `priveghi-shell_iOS` target → Signing & Capabilities → Team: your personal
+team. Pick your iPhone as the run destination and press Run. The first launch asks you to trust
+the developer on the phone (Settings → General → VPN & Device Management). **Never commit the
+team:** Xcode (or `APPLE_DEVELOPMENT_TEAM` set in your shell) writes `DEVELOPMENT_TEAM` into
+`src-tauri/gen/apple/priveghi-shell.xcodeproj/project.pbxproj`; `npm run check` fails while it is
+there, and `git restore` of that one file before a commit puts it back. With a free Apple ID the
+install expires after 7 days (run it from Xcode again); a paid developer account gives a year and
+TestFlight. `npm run shell:mac` builds and opens the same app as a Mac window (1280×720); it has
+not been run yet.
+
+**What only the phone can judge:** the touch under a thumb (cards drag, the view does not move);
+the home indicator (a swipe up from the bottom edge leaves the app, and the cloth's lowest row
+lies near it); the silent switch and Web Audio (whether the chime is heard with the switch on);
+the safe areas around the Dynamic Island and the home bar. In the simulator (the device held
+upright, the app turned to landscape) the web view gave the page the upright insets (62 px top,
+34 bottom, none at the sides), so the table drew at 0.425 of its reference size, where the
+landscape insets (62 at each side, 21 below) would give 0.53: compare the table with the
+home-screen copy in Safari, and if the shell's is smaller on the phone too, that is its next fix.
+
+The generated Xcode project (`src-tauri/gen/apple/`) is committed without its build outputs;
+`npm run tauri -- ios init` was run once, and re-running it checks for CocoaPods and
+libimobiledevice, which this project never calls (it has no pods, and the Xcode route streams no
+device log). The icons are cut from the app's own `?icon` view: `npm run shell:icons`, with
+`npx vite preview --port 4173 --strictPort` running.
+
 ## The turnover to the dead's wake
 
 The fiction turned over on 2026-10-13: the player is the dead, Cel Nenuntit at his own wake
@@ -196,7 +260,12 @@ the first brief, rulings R1–R47) was rebuilt in six steps, each on its own bra
 
 Everything above runs in Chromium under Playwright at 844×390, 1024×768 and 1280×720: zero console
 errors, no element outside the viewport, no request to any other origin, the six fonts loaded, every
-gesture and every ending reached from the engine's own state. Nothing here has run on a phone. On a
+gesture and every ending reached from the engine's own state; the same build, served under the
+native shell's CSP, breaks no directive. The shell has run only in the iOS Simulator (iPhone 17 Pro,
+iOS 26.4): the review build draws the fifth day in WKWebView
+([docs/shots/shell/wake-iphone-17-pro-simulator.png](docs/shots/shell/wake-iphone-17-pro-simulator.png)),
+and a scratch build with a diagnostic script counted no CSP violation and no error, with the six
+fonts loaded. Nothing here has run on a phone. On a
 phone, look for: dragging moves cards and not the page; sound starts after the first touch; the
 home-screen copy opens full screen; nothing sits under the notch or the home bar; leaving and
 returning resumes the wake. What
