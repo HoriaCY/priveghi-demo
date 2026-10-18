@@ -125,6 +125,12 @@ device's localStorage. `npm run check` verifies all of it on every build, along 
 history. Credits and the font licences: [credits](https://horiacy.github.io/priveghi-demo/credits.html)
 and [CREDITS.md](CREDITS.md).
 
+## QA
+
+[docs/QA_SCRIPT.md](docs/QA_SCRIPT.md) is the tester's script: an end-to-end winning wake, the five
+endings and how to reach each by hand, the saves, the plays, the odd corners, and the questions
+only a sit on a phone can answer. Every expected state in it was checked against the engine.
+
 ## Build and test
 
 Needs Rust (stable) with the `wasm32-unknown-unknown` target, `wasm-pack`, and Node 24.
