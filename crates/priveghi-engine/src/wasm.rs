@@ -3,10 +3,11 @@
 //! draws it. Nothing on the JavaScript side decides a rule; the projections only the rules can make
 //! (the forecast, a match in points) are asked of the engine. Every move names its seat here, at the
 //! boundary, where a seat will one day come from (a hand, a network message): docs/ENGINE_API.md.
+//! The seat crosses as a JavaScript number and is checked, never defaulted (RULINGS R162).
 
 use wasm_bindgen::prelude::*;
 
-use crate::v3::{forecast, match_points, Action, Kind, Move, Wake};
+use crate::v3::{forecast, match_points, seat_from_js, Action, Kind, Move, Wake};
 
 #[wasm_bindgen]
 pub struct Engine {
@@ -38,32 +39,34 @@ impl Engine {
     }
 
     /// What `apply` would answer for this action from this seat, without applying it.
-    pub fn probe(&self, action: &str, now_ms: f64, seat: u8) -> Result<String, JsError> {
+    pub fn probe(&self, action: &str, now_ms: f64, seat: f64) -> Result<String, JsError> {
         let mv = move_of(action, now_ms, seat)?;
         Ok(answer(self.wake.ask(&mv)))
     }
 
-    /// Plays an action given as JSON from this seat. Answers `{"ok":true,"changed":…}` or `{"ok":false,"refusal":…}`.
-    pub fn apply(&mut self, action: &str, now_ms: f64, seat: u8) -> Result<String, JsError> {
+    /// Plays an action given as JSON from this seat. Answers `{"ok":true,"changed":…}` or `{"ok":false,"refusal":…}`;
+    /// throws `seat` when the seat is not an integer in 0..=255.
+    pub fn apply(&mut self, action: &str, now_ms: f64, seat: f64) -> Result<String, JsError> {
         let mv = move_of(action, now_ms, seat)?;
         Ok(answer(self.wake.play(mv)))
     }
 
     /// What this Dor would make on this card, in points (chapter §5), or -1 if the drop would be
     /// refused now. The strip names it before the hand commits.
-    pub fn matches(&self, dor: u32, on: u32, now_ms: f64, seat: u8) -> i32 {
+    pub fn matches(&self, dor: u32, on: u32, now_ms: f64, seat: f64) -> Result<i32, JsError> {
+        let seat = seat_of(seat)?;
         if self.wake.ask(&Move { seat, at: now_ms as u64, action: Action::Place { dor, on } }).is_err() {
-            return -1;
+            return Ok(-1);
         }
         let s = &self.wake.state;
         let (fel, from) = match s.cards.iter().find(|c| c.id == dor).map(|c| &c.kind) {
             Some(Kind::Dor { fel, from, .. }) => (*fel, *from),
-            _ => return -1,
+            _ => return Ok(-1),
         };
-        match s.cards.iter().find(|c| c.id == on) {
+        Ok(match s.cards.iter().find(|c| c.id == on) {
             Some(target) => i32::from(match_points(fel, from, target)),
             None => -1,
-        }
+        })
     }
 
     /// The journal replays from its origin to exactly this state: the WebAssembly side of the determinism check.
@@ -72,7 +75,12 @@ impl Engine {
     }
 }
 
-fn move_of(action: &str, now_ms: f64, seat: u8) -> Result<Move, JsError> {
+fn seat_of(seat: f64) -> Result<u8, JsError> {
+    seat_from_js(seat).ok_or_else(|| JsError::new("seat"))
+}
+
+fn move_of(action: &str, now_ms: f64, seat: f64) -> Result<Move, JsError> {
+    let seat = seat_of(seat)?;
     let action: Action = serde_json::from_str(action).map_err(|e| JsError::new(&e.to_string()))?;
     Ok(Move { seat, at: now_ms as u64, action })
 }

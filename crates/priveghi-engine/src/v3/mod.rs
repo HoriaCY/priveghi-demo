@@ -23,6 +23,12 @@ pub const SAVE_VERSION: u32 = 1;
 /// The seat of the solo hand: every move in M0–M2. The rules ignore the seat (RULINGS R142).
 pub const SOLO: u8 = 0;
 
+/// A seat as JavaScript hands it over: a number that is an integer in 0..=255, or nothing. An
+/// `undefined` arrives as NaN, so a missing seat is refused rather than read as 0 (RULINGS R162).
+pub fn seat_from_js(v: f64) -> Option<u8> {
+    (v.fract() == 0.0 && (0.0..=255.0).contains(&v)).then_some(v as u8)
+}
+
 /// One move: who (the seat), when (the injected clock), what. The journal is a list of these.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Move {
@@ -73,16 +79,17 @@ impl Wake {
         Wake { version: SAVE_VERSION, origin: state.clone(), journal: Vec::new(), state }
     }
 
-    /// The one door that changes a wake. `Ok(true)` when the state changed; an accepted move is
-    /// journaled, a refusal records and changes nothing. Again begins the journal anew: a wake's
-    /// journal never carries the wake before it.
+    /// The one door that changes a wake. `Ok(true)` when the state changed; a refusal records and
+    /// changes nothing. An accepted move is journaled only if the state it leaves differs from the
+    /// one before: a move that maps the state to itself (a pause in the dark) is no step of the
+    /// replay (RULINGS R161). Again begins the journal anew: a wake's journal never carries the wake before it.
     pub fn play(&mut self, mv: Move) -> Result<bool, Refusal> {
         let Some(next) = self.next(&mv)? else { return Ok(false) };
         let changed = next.rev != self.state.rev;
         if mv.action == Action::Again {
             self.origin = next.clone();
             self.journal.clear();
-        } else {
+        } else if changed || next != self.state {
             self.journal.push(mv);
         }
         self.state = next;
@@ -113,12 +120,27 @@ impl Wake {
         Ok(s)
     }
 
+    /// A journal is only ever replayed by the rules that wrote it. When this one no longer replays
+    /// from `origin` to exactly `state` (a later build changed the rules), the state is kept and the
+    /// journal begins again at it: `origin` = `state`, the journal empty. `true` when it did.
+    pub fn rebase(&mut self) -> bool {
+        if self.replay().is_ok_and(|s| s == self.state) {
+            return false;
+        }
+        self.origin = self.state.clone();
+        self.journal.clear();
+        true
+    }
+
     pub fn to_save(&self) -> String {
         serde_json::to_string(self).expect("a wake serialises")
     }
 
     /// Loads what `to_save` wrote, or a save from before the version (`{"state": …}`), which goes on
     /// as this version with its journal beginning here. A newer build's save is refused, never guessed at.
+    /// A journal is only ever replayed by the rules that wrote it: a save whose journal no longer
+    /// replays under these rules keeps its state and its journal begins again at the load (`rebase`).
+    /// That costs one replay per load (the nine-day reference run journals 59 moves).
     pub fn from_save(json: &str) -> Result<Wake, SaveError> {
         #[derive(Deserialize)]
         struct V0 {
@@ -129,18 +151,20 @@ impl Wake {
             None => 0,
             Some(v) => v.as_u64().ok_or(SaveError::Unreadable)?,
         };
-        match version {
+        let mut wake = match version {
             0 => {
                 let V0 { state } = serde_json::from_value(value).map_err(|_| SaveError::Unreadable)?;
-                Ok(Wake { version: SAVE_VERSION, origin: state.clone(), journal: Vec::new(), state })
+                Wake { version: SAVE_VERSION, origin: state.clone(), journal: Vec::new(), state }
             }
             v if v == u64::from(SAVE_VERSION) => {
-                serde_json::from_value(value).map_err(|_| SaveError::Unreadable)
+                serde_json::from_value(value).map_err(|_| SaveError::Unreadable)?
             }
-            v if v > u64::from(SAVE_VERSION) => Err(SaveError::Newer),
+            v if v > u64::from(SAVE_VERSION) => return Err(SaveError::Newer),
             // a version between 0 and this one whose migration was never written
-            _ => Err(SaveError::Unreadable),
-        }
+            _ => return Err(SaveError::Unreadable),
+        };
+        wake.rebase();
+        Ok(wake)
     }
 
     /// The renderer ticks ten times a second; a tick with nothing due copies nothing and is `None`.

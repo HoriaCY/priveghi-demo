@@ -282,7 +282,9 @@ calms the house; Uitare only counts the Dor you left).
   `credits.html`:
   `const w = JSON.parse(localStorage.getItem('priveghi.v3')); localStorage.setItem('priveghi.v3', JSON.stringify({ ...w, version: 99 }))`;
   then open the game. Expect: the dark, no text. Touch twice: „Te-au adus acasă.", and once the strip
-  clears, „Priveghiul acela e din altă vreme." on the strip, once. Local Storage shows
+  clears, „Priveghiul acela e din altă vreme." on the strip, once. Plant it again and this time tap a
+  card about two seconds after „Te-au adus acasă.": the card keeps the strip, a second tap opens the
+  page on it, and the line comes only after the strip has cleared. Local Storage shows
   `priveghi.v3.refused` holding the version-99 save and `priveghi.v3` the new wake; `?reset` removes
   both. Note whether the line reads as the house's own voice or as an error message.
 

@@ -6,7 +6,8 @@ export * from './types';
 /**
  * One wake held in WebAssembly: the dead's engine (RULINGS R60). Every rule runs there; this side
  * sends actions, reads the state back and asks for the projections only the rules can make. Every
- * move names its seat (docs/ENGINE_API.md): there is no default, so no call site implies one.
+ * move names its seat (docs/ENGINE_API.md): there is no default, so no call site implies one; a seat
+ * that is not an integer in 0..255 (one left out included) throws `seat`.
  */
 export class Wake {
   private constructor(private readonly engine: Engine) {}

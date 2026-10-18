@@ -3,8 +3,9 @@
 Changes to this page are rulings, not refactors.
 
 Any renderer (this DOM table, a native one, a server) is written against what is named here and
-nothing else. The code is `crates/priveghi-engine/src/v3/` (the rules), `src/wasm.rs` (the browser
-bridge) and `src/engine/` (its TypeScript twin, whose `types.ts` mirrors every JSON shape below).
+nothing else. The code is `crates/priveghi-engine/src/v3/` (the rules),
+`crates/priveghi-engine/src/wasm.rs` (the browser bridge) and `src/engine/` (its TypeScript twin,
+whose `types.ts` mirrors every JSON shape below, the save's included: `Save`).
 
 ## Entry points
 
@@ -14,17 +15,18 @@ bridge) and `src/engine/` (its TypeScript twin, whose `types.ts` mirrors every J
 | Call | What it does |
 |---|---|
 | `Wake::new(now_ms)`, `Wake::with_config(config, now_ms)` | A new wake in the dark (phase `boot`): `version` = `SAVE_VERSION`, `origin` = that state, an empty journal. |
-| `play(&mut self, Move) -> Result<bool, Refusal>` | The one door that changes a wake. `Ok(changed)`; an accepted move is journaled; a refusal records and changes nothing. |
+| `play(&mut self, Move) -> Result<bool, Refusal>` | The one door that changes a wake. `Ok(changed)`; an accepted move is journaled if the state it leaves differs from the one before; a refusal records and changes nothing. |
 | `ask(&self, &Move) -> Result<bool, Refusal>` | What `play` would answer, recording nothing. |
 | `apply(action, now_ms)`, `probe(action, now_ms)` | `play` and `ask` from the seat `SOLO`. |
 | `replay(&self) -> Result<State, (usize, Refusal)>` | The journal folded over `origin` with `step`; the error names the index of a move refused on replay. |
+| `rebase(&mut self) -> bool` | If the journal does not replay from `origin` to exactly `state`, keeps the state and begins the journal again at it (`origin` = `state`, the journal empty); `true` when it did. `from_save` calls it. |
 | `to_save(&self) -> String`, `Wake::from_save(&str) -> Result<Wake, SaveError>` | The save (below). `SaveError` is `newer` or `unreadable`. |
 
 Free functions the bridge needs: `forecast(&State) -> [u8; 3]` (Uitare at the next three dawns if
 nothing is done) and `match_points(fel, from, &Card) -> u8` (what a Dor makes on a card, 0..2).
 Also public: `step(&State, Action, now_ms) -> Result<State, Refusal>`, `new_state(config, now_ms)`,
-`tick_due(&State, now_ms)`, `sleepers`, `legal_act_exists`, `forget_pow_m`; the constants
-`SAVE_VERSION` (1) and `SOLO` (0).
+`tick_due(&State, now_ms)`, `sleepers`, `legal_act_exists`, `forget_pow_m`, `seat_from_js(f64) ->
+Option<u8>` (the bridge's check of a seat); the constants `SAVE_VERSION` (1) and `SOLO` (0).
 
 **WebAssembly, `Engine`** (JSON strings across the boundary):
 
@@ -34,11 +36,14 @@ Also public: `step(&State, Action, now_ms) -> Result<State, Refusal>`, `new_stat
 | `Engine.load(save)` | A wake from a save; throws an `Error` whose message is `newer` or `unreadable`. |
 | `save()` | The save, version 1. |
 | `state()` | The View (below). |
-| `apply(action, now_ms, seat)`, `probe(action, now_ms, seat)` | `{"ok":true,"changed":bool}` or `{"ok":false,"refusal":"…"}`. |
-| `matches(dor, on, now_ms, seat)` | The points this Dor makes on this card, or -1 if the drop would be refused now. |
+| `apply(action, now_ms, seat)`, `probe(action, now_ms, seat)` | `{"ok":true,"changed":bool}` or `{"ok":false,"refusal":"…"}`; throws `seat` on a seat that is not one. |
+| `matches(dor, on, now_ms, seat)` | The points this Dor makes on this card, or -1 if the drop would be refused now; throws `seat` likewise. |
 | `replays()` | Whether the journal replays from its origin to exactly the state. |
 
-The seat has no default anywhere at the boundary: every call names it.
+The seat has no default anywhere at the boundary: every call names it. It crosses as a JavaScript
+number and is checked with `seat_from_js`: an integer in 0..=255, or the call throws an `Error`
+whose message is `seat`. A seat left out (`undefined`, which arrives as NaN) is refused, never read
+as 0; 256 is refused, never wrapped.
 
 ## The move and the seat
 
@@ -104,10 +109,13 @@ until}`, `bride_stands`, `treci`, `ramai`, `ended {ending}`. The log says what h
 ## The save, version 1
 
 `{"version":1,"origin":State,"journal":[Move],"state":State}`. `origin` is a full state: a new wake's
-dark, or the state a save was carried over in. The journal holds every accepted move except a tick
-with nothing due; it holds no refusal and nothing asked (`ask`, `probe`, `matches`). An accepted
-`again` begins it anew: `origin` becomes the new wake's dark and the journal empties, so a journal
-never carries the wake before it.
+dark, or the state a save was carried over in. The journal holds every accepted move that changed
+the state (whole-`State` inequality): no refusal, nothing asked (`ask`, `probe`, `matches`), and no
+move that leaves the state as it was (a tick with nothing due, a pause or resume in the dark, in her
+door or on an ended page, a pause while paused); leaving such a move out changes no replay, since it
+maps the state to itself. An accepted `again` begins it anew: `origin` becomes the new wake's dark
+and the journal empties, so a journal never carries the wake before it. The nine-day reference run
+journals 59 moves.
 
 Loading (`from_save`): no `version` field is version 0, the saves written before the version
 (`{"state": …}`): migrated to version 1 with `origin` = that state and an empty journal, and the wake
@@ -116,14 +124,26 @@ that does not parse into the shape is `unreadable`. Every bump of `SAVE_VERSION`
 migration from the version before or states its refusal. The demo keeps a refused save aside in
 `localStorage['priveghi.v3.refused']` and begins a new wake (README, Saves).
 
+A journal is only ever replayed by the rules that wrote it; a save whose journal no longer replays
+under these rules keeps its state and its journal begins again at the load (`rebase`). The version
+names the save's shape, not the rules that played it, so every load checks: one replay per load
+(59 moves for the nine days).
+
 ## Invariants
 
 - One pure `step(state, action, now_ms)`: no I/O, no clock of its own (time is the injected
   `now_ms`), no random numbers.
-- Integers only: the economy is carried in thousandths (`_m`); a test walks the save and fails on any
-  float.
-- The journal replays from `origin` to exactly `state`: checked natively (`cargo test`) and in the
-  WebAssembly build in the browser (`replays()`); the reference run's final state is pinned as an
-  FNV-1a digest that CI re-checks on another machine.
+- The save holds integers only: the economy is carried in thousandths (`_m`); a test walks the
+  nine-day run's save and fails on any number that is not an integer.
+- The rules use one float computation, `forget_pow_m` (IEEE `f64`: the rate in thousandths divided
+  by 1000, multiplied by itself day by day, then rounded ties-to-even back to thousandths); a test
+  pins it to the simulator's table for all 41 days at both forgetting rates. Nothing else in `step`
+  touches a float.
+- The journal replays from `origin` to exactly `state` (`cargo test`). The reference run's final
+  state is pinned as an FNV-1a digest, checked with the whole Rust suite on three targets: aarch64
+  native (on a Mac, where it was computed; CI has none), x86_64 native (CI) and wasm32-wasip1 under
+  wasmtime (CI).
+- In the browser, `replays()` is the wasm32-unknown-unknown build replaying its own journal: a
+  self-consistency check, not a comparison across targets.
 - A `Wake` never reaches outside itself (no globals, no shared state), so a future `Village` can hold
   several without the `Wake` changing.

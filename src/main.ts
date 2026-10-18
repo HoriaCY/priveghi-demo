@@ -210,6 +210,8 @@ async function main(): Promise<void> {
 
   let stripTimer = 0;
   let stripFocus = '';
+  /** When the strip last went blank. */
+  let stripFreeAt = 0;
   const say = (html: string, ms: number = TUNING.toast_ms, focus = '') => {
     strip.innerHTML = html;
     strip.classList.add('show');
@@ -218,6 +220,7 @@ async function main(): Promise<void> {
     stripTimer = window.setTimeout(() => {
       strip.classList.remove('show');
       stripFocus = '';
+      stripFreeAt = Date.now();
     }, ms);
   };
   const text = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -416,6 +419,18 @@ async function main(): Promise<void> {
   };
   /** A save kept aside at the load: named once on the strip, after the boot's line has left it (R145). */
   let aside = keptAside;
+  /**
+   * A line nobody tapped for waits until the strip has been blank `kept_aside_ms`: it never covers a
+   * strip the hand summoned, nor takes a card's second tap from it (R164). Never in the dark (R133).
+   */
+  const sayWhenFree = (html: string) => {
+    const wait = strip.classList.contains('show') ? TUNING.kept_aside_ms : stripFreeAt + TUNING.kept_aside_ms - Date.now();
+    if (wait > 0) {
+      window.setTimeout(() => sayWhenFree(html), wait);
+      return;
+    }
+    if (view.phase !== 'boot') say(html);
+  };
   /** The boot's second touch, or its wait: they bring you home; the candle lights at your head; one line when the pool is open. */
   const begin = () => {
     window.clearTimeout(bootTimer);
@@ -425,7 +440,7 @@ async function main(): Promise<void> {
     window.setTimeout(() => {
       if (aside) {
         aside = false;
-        window.setTimeout(() => say(`<span>${text(LINES.keptAside.ro)}</span>`), TUNING.toast_ms + TUNING.kept_aside_ms);
+        window.setTimeout(() => sayWhenFree(`<span>${text(LINES.keptAside.ro)}</span>`), TUNING.toast_ms + TUNING.kept_aside_ms);
       }
       if (view.phase !== 'wake' || view.day !== 1) return;
       page.say(BROUGHT_HOME.ro);

@@ -1,6 +1,7 @@
-//! The save gets a version, a journal and a seat (RULINGS R141–R147). The journal replays from its
-//! origin to the state; a save from before the version goes on; a newer build's save is refused;
-//! the save holds integers only, so two machines given the same moves reach the same bytes.
+//! The save gets a version, a journal and a seat (RULINGS R141–R147, R160–R163). The journal replays
+//! from its origin to the state, and only under the rules that wrote it; a save from before the
+//! version goes on; a newer build's save is refused; the save holds integers only; the nine days'
+//! state is pinned as a digest that three targets check (R163).
 
 mod v3;
 
@@ -67,6 +68,40 @@ fn a_save_from_before_the_version_goes_on_as_version_one_and_ends_on_the_fixture
     assert!(back.journal.is_empty(), "its journal begins at the migration");
     policy.play(&mut back);
     assert_eq!(summary(&back, "chibzuit"), FIXTURE);
+    replays(&back);
+}
+
+#[test]
+fn a_journal_that_replays_is_loaded_as_it_was() {
+    let w = nine_days();
+    let mut back = Wake::from_save(&w.to_save()).unwrap();
+    assert!(back.origin == w.origin, "the origin is kept");
+    assert_eq!(back.journal, w.journal, "the journal is kept");
+    assert!(back.state == w.state);
+    assert!(!back.rebase(), "a journal that replays is never begun again");
+    assert!(back == w);
+}
+
+#[test]
+fn a_journal_these_rules_no_longer_replay_keeps_its_state_and_begins_again_at_the_load() {
+    let w = nine_days();
+    // what a build with other rules would see: the state went on and the journal no longer reaches it
+    let drifted = Wake { journal: Vec::new(), ..w.clone() };
+    assert!(drifted.replay().is_ok_and(|s| s != w.state), "the empty journal replays to the dark");
+    let mut back = Wake::from_save(&drifted.to_save()).unwrap();
+    assert!(back.state == w.state, "the state is kept");
+    assert!(back.origin == w.state, "the journal begins again at the load");
+    assert!(back.journal.is_empty());
+    replays(&back);
+    // a journal with a move these rules refuse on replay: the same
+    let mut refused = w.clone();
+    refused.journal.insert(0, Move { seat: SOLO, at: T0, action: Action::Treci });
+    assert_eq!(refused.replay().map(|_| ()), Err((0, Refusal::NotNow)));
+    let again = Wake::from_save(&refused.to_save()).unwrap();
+    assert!(again == back, "rebased the same way");
+    // and the wake goes on from there, journaled again
+    assert_eq!(back.apply(Action::Ramai, 1), Ok(true));
+    assert_eq!(back.journal, vec![Move { seat: SOLO, at: 1, action: Action::Ramai }]);
     replays(&back);
 }
 
@@ -145,6 +180,44 @@ fn refusals_idle_ticks_and_questions_are_not_journaled() {
 }
 
 #[test]
+fn a_move_that_leaves_the_state_as_it_was_is_accepted_and_not_journaled() {
+    let mut w = Wake::new(T0);
+    for i in 0..1000 {
+        assert_eq!(w.apply(Action::Pause, T0 + 2 * i), Ok(false));
+        assert_eq!(w.apply(Action::Resume, T0 + 2 * i + 1), Ok(false));
+    }
+    assert!(w.journal.is_empty(), "the dark's pauses are no steps ({} journaled)", w.journal.len());
+    // in the wake the first pause is a change, a second is not, the resume is
+    let mut w = wake();
+    let now = by_day(&w);
+    assert_eq!(w.apply(Action::Pause, now), Ok(true));
+    assert_eq!(w.apply(Action::Pause, now + 1), Ok(false));
+    assert_eq!(w.apply(Action::Resume, now + 2), Ok(true));
+    assert_eq!(w.journal.len(), 3, "the boot, the pause, the resume");
+    replays(&w);
+    // the reference run had no such move: its 59 stand, and replay
+    let w = nine_days();
+    assert_eq!(w.journal.len(), 59);
+    replays(&w);
+    let mut ended = w.clone();
+    ended.apply(Action::Ramai, 1).unwrap();
+    let n = ended.journal.len();
+    assert_eq!(ended.apply(Action::Pause, 2), Ok(false), "an ended page: nothing to pause");
+    assert_eq!(ended.journal.len(), n);
+}
+
+#[test]
+fn a_seat_from_javascript_is_an_integer_in_a_byte_or_refused() {
+    assert_eq!(seat_from_js(0.0), Some(0));
+    assert_eq!(seat_from_js(7.0), Some(7));
+    assert_eq!(seat_from_js(255.0), Some(255));
+    // NaN is what `undefined` becomes: a seat left out is refused, never taken for 0
+    for bad in [-1.0, 256.0, 0.5, 254.5, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(seat_from_js(bad), None, "{bad}");
+    }
+}
+
+#[test]
 fn the_rules_ignore_the_seat() {
     let w = nine_days();
     assert!(w.journal.iter().all(|m| m.seat == SOLO), "every move made through apply is the solo hand's");
@@ -185,8 +258,9 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 }
 
 /// The nine-day run's final state, pinned as bytes: computed on an aarch64 Mac; CI re-checks it on
-/// Linux x86_64 (two machines, one state). Re-pinned only when the state's shape changes on purpose,
-/// with a ruling; otherwise a change here means the rules drifted or a float got into the economy.
+/// Linux x86_64 natively and on wasm32-wasip1 under wasmtime (three targets, one state, R163).
+/// Re-pinned only when the state's shape changes on purpose, with a ruling; otherwise a change here
+/// means the rules drifted or a float got into the economy.
 const NINE_DAYS_FNV: u64 = 0x6cdb_e186_4d1f_bc01;
 
 #[test]
