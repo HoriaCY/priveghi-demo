@@ -62,26 +62,22 @@ so every wake deals the same first table and differs only by what is done at it.
 
 ## A winning wake
 
-The game has no instructions; this route keeps both marks (the browser check `loop.spec.ts` plays
-exactly it). Tap the flame to end a day early.
+The game has no instructions; this is the route the review fixture `door` plays (the considered
+hand of the chapter's simulator), which reaches the Bride on the ninth day.
 
-1. Day 1: Grâu into GĂZDUIEȘTE (makes colivă), Codrii Vlăsiei into UMBLĂ.
-2. Day 2: wander.
-3. Day 3: Colivă onto Cel Nenuntit (the plank, far left); wander.
-4. Day 4: wander; the fourth wander brings the peddler.
-5. Day 5: Negustor and Fier de baltă into GĂZDUIEȘTE.
-6. Day 6: Grâu into GĂZDUIEȘTE (the colivă for day 9). Days 7 and 8: end the day.
-7. Day 9: Colivă onto Cel Nenuntit, end the day: the Pomelnic.
+1. Each day, let the candle burn down (or tap the flame at once): the acts are cheaper at night,
+   and on the first two nights the masked players take the blame.
+2. At night, drag the oldest Dor onto the thing of the house that matches it: the mother's longing
+   on her kerchief or her icon, the betrothed's on the ring, the brother's on the cup or the flute,
+   the enemy's on the knife or the mirror, the priest's on the icon. Two knocks a night; play them or
+   skip them.
+3. When the village is loud (the dog tied in the yard), do nothing that night: tap the troiță and
+   rest, and the house calms.
+4. Haunt the porch once (drag Tindă into BÂNTUIE) for the knife and the flute.
+5. On the ninth day, if little enough was forgotten, the Bride stands in the door: drag your card
+   onto it.
 
-Tap the flame nine times with nothing placed and the Bride comes instead.
-
-## Checked, and not
-
-Checked: the rules (`cargo test`), the browser flows at 844×390, 1024×768 and 1280×720 with a
-mouse (`npx playwright test`), and the deployed site (`npm run test:live`). Not checked: any real
-phone or touch screen. On a phone, look for: dragging moves cards and not the page; sound starts
-after the first touch; the home-screen copy opens full screen; nothing sits under the notch or the
-home bar; leaving and returning resumes the wake.
+Let every Dor gutter instead and you are gone, in Uitare, on the seventh day.
 
 ## What is on the table
 
@@ -173,7 +169,10 @@ the first brief, rulings R1–R47) was rebuilt in six steps, each on its own bra
 
 Everything above runs in Chromium under Playwright at 844×390, 1024×768 and 1280×720: zero console
 errors, no element outside the viewport, no request to any other origin, the six fonts loaded, every
-gesture and every ending reached from the engine's own state. Nothing here has run on a phone. What
+gesture and every ending reached from the engine's own state. Nothing here has run on a phone. On a
+phone, look for: dragging moves cards and not the page; sound starts after the first touch; the
+home-screen copy opens full screen; nothing sits under the notch or the home bar; leaving and
+returning resumes the wake. What
 only a phone can judge: the sizes (the hems, the count tags, the forecast's numerals, the dream's
 tiles under a thumb), the dusk and the fade, whether the cat and the mask read as the house's cover
 story, whether the rules read without a word of instruction. Every number that governs feel is a
