@@ -142,10 +142,13 @@ and [CREDITS.md](CREDITS.md).
 
 A native build never phones home unless the player opts in. Anything that would (a crash report,
 say) ships off, asks once, and stays off when the player says no, with the features that depend on
-it disabled. Today nothing phones home: the privacy check fails on any network plugin, network
-crate, updater or outside origin in the native shell's CSP, and on a signing team in any tracked
-file. A crash reporter, when one is ruled in, amends that check with its consent gate (Horia,
-2026-10-18).
+it disabled. Today nothing phones home, and the privacy check's eleventh item reads the native
+shell by allowlist: its crates (as Cargo reads them), the npm tools, the config keys, the
+capabilities and the linked frameworks each name what may be there, and anything else fails the
+check until a ruling adds it; the app loads only its bundled files under a CSP of local sources;
+its own code opens no socket and names no outside URL; and no signing team is in what a commit
+would carry. A crash reporter, when one is ruled in, amends that item with its consent gate
+(Horia, 2026-10-18).
 
 ## QA
 
@@ -211,13 +214,18 @@ npm run shell:ios           # builds the web, opens Xcode, and waits: keep this 
 
 In Xcode, once: the `priveghi-shell_iOS` target → Signing & Capabilities → Team: your personal
 team. Pick your iPhone as the run destination and press Run. The first launch asks you to trust
-the developer on the phone (Settings → General → VPN & Device Management). **Never commit the
-team:** Xcode (or `APPLE_DEVELOPMENT_TEAM` set in your shell) writes `DEVELOPMENT_TEAM` into
-`src-tauri/gen/apple/priveghi-shell.xcodeproj/project.pbxproj`; `npm run check` fails while it is
-there, and `git restore` of that one file before a commit puts it back. With a free Apple ID the
-install expires after 7 days (run it from Xcode again); a paid developer account gives a year and
-TestFlight. `npm run shell:mac` builds and opens the same app as a Mac window (1280×720); it has
-not been run yet.
+the developer on the phone (Settings → General → VPN & Device Management). **The team stays on
+your Mac:** Xcode (or `APPLE_DEVELOPMENT_TEAM` set in your shell) writes it into
+`src-tauri/gen/apple/priveghi-shell.xcodeproj/project.pbxproj`, a file of this public repository.
+`npm run shell:setup` (which `npm run shell:ios` runs first) defines a git filter in this clone
+that stores that file, and `project.yml`, without the lines naming a team, so the file stays
+unmodified to git and no commit can carry the team. Never commit from a clone where it has not run:
+`npm run check` fails while a team is in the working tree and the filter is not set, and fails on
+any team in what is staged. With a free Apple ID the install expires after 7 days (run it from
+Xcode again); a paid developer account gives a year and TestFlight. `npm run shell:mac` builds and
+opens the same app as a Mac window (1280×720; macOS 13 or later, so that the system web view is new
+enough for the CSP's `'wasm-unsafe-eval'`); it has no menu bar items (close the window to quit) and has not been
+run yet.
 
 **What only the phone can judge:** the touch under a thumb (cards drag, the view does not move);
 the home indicator (a swipe up from the bottom edge leaves the app, and the cloth's lowest row

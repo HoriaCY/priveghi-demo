@@ -41,9 +41,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "copyright": "All rights reserved.",
     "iOS": {
       "minimumSystemVersion": "16.4"
+    },
+    "macOS": {
+      "minimumSystemVersion": "13.0"
     }
   }
 }
