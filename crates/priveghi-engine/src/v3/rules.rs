@@ -83,15 +83,18 @@ pub fn step(state: &State, action: Action, now_ms: u64) -> Result<State, Refusal
         },
         Phase::Door => match action {
             Action::Treci => treci(&mut s),
+            Action::Ramai => ramai(&mut s),
+            Action::Again => return Ok(again(&s, now_ms)),
             Action::Tick | Action::Pause | Action::Resume => false,
             _ => return Err(Refusal::NotNow),
         },
         Phase::Ended => match action {
+            Action::Again => return Ok(again(&s, now_ms)),
             Action::Tick | Action::Pause | Action::Resume => false,
             _ => return Err(Refusal::NotNow),
         },
         Phase::Wake => match action {
-            Action::Begin | Action::Treci => return Err(Refusal::NotNow),
+            Action::Begin | Action::Treci | Action::Ramai | Action::Again => return Err(Refusal::NotNow),
             Action::Tick => tick(&mut s, now_ms),
             Action::CloseDay => {
                 close_day(&mut s, now_ms, true);
@@ -140,6 +143,20 @@ fn treci(s: &mut State) -> bool {
     log(s, Event::Treci);
     end(s, Ending::Nunta);
     true
+}
+
+/// She stood in the door and you would not go: you remain (chapter §10).
+fn ramai(s: &mut State) -> bool {
+    log(s, Event::Ramai);
+    end(s, Ending::Ratacire);
+    true
+}
+
+/// Another wake from the dark: a new dead, the same house. Nothing of this wake carries over in M0.
+fn again(s: &State, now: u64) -> State {
+    let mut next = new_state(s.config.clone(), now);
+    next.rev = s.rev + 1;
+    next
 }
 
 // ---------------------------------------------------------------- the clock
@@ -330,7 +347,7 @@ fn cost_of(cfg: &Config, verb: Verb) -> u8 {
         Verb::Urneste => cfg.cost_urneste,
         Verb::Sopteste => cfg.cost_sopteste,
         Verb::Arata => cfg.cost_arata,
-        Verb::Bantuie => cfg.cost_umbla,
+        Verb::Bantuie => cfg.cost_bantuie,
         Verb::Asculta => cfg.cost_asculta,
         Verb::Odihneste => 0,
     }
@@ -503,7 +520,7 @@ fn bantuie(s: &mut State, loc_id: u32) -> Result<bool, Refusal> {
     if loc.village() && !s.night {
         return Err(Refusal::OnlyAtNight);
     }
-    let cost = s.config.cost_umbla;
+    let cost = s.config.cost_bantuie;
     if s.putere < cost {
         return Err(Refusal::Tired);
     }
@@ -886,7 +903,8 @@ fn cloth(s: &State) -> u32 {
     (stacks.len() + franturi(s) + sleepers(s).len()) as u32
 }
 
-/// Uitare at the next three dawns if nothing is done: the counter plus the loose Dor by stub (chapter §7).
+/// Uitare at the next three dawns if nothing is done: the counter plus the loose Dor by stub (chapter §3),
+/// never past `uitare_cap`: there is no dawn beyond the Uitare ending.
 pub fn forecast(s: &State) -> [u8; 3] {
     let mut f = [0u8; 3];
     let mut u = s.uitare;
@@ -897,7 +915,7 @@ pub fn forecast(s: &State) -> [u8; 3] {
             .filter(|c| c.at == Where::Cloth)
             .filter(|c| matches!(c.kind, Kind::Dor { left, .. } if usize::from(left) == k + 1))
             .count();
-        u = u.saturating_add(due as u8);
+        u = u.saturating_add(due as u8).min(s.config.uitare_cap);
         *slot = u;
     }
     f

@@ -1,9 +1,13 @@
-// The table's fixed pieces: the verb niches, the dark door, the candle, the plank, bread and salt.
-// Niche, door, candle, grain row and still life are lifted from priveghi_prototype_v4.html.
-import { M, rosette, thread } from './motifs';
+// The table's fixed pieces: the verb niches, the dark door (and the Bride in it), the candle, the
+// plank with its tally bands, bread and salt. Niche, door, candle, grain row and still life are lifted
+// from priveghi_prototype_v4.html; the tally band and the Bride's door are the dead's table's (R61).
+import type { Amintire } from '../engine';
+import { ART } from './art';
+import { hemPattern, type Hem } from './card';
+import { M, ochiulDeschis, rosette, thread } from './motifs';
 import { C } from './palette';
 
-export type Mark = 'meandru' | 'pom' | 'ochi' | 'spic' | 'sarpe';
+export type Mark = 'meandru' | 'pom' | 'ochi' | 'spic' | 'sarpe' | 'colt';
 
 /** A craft frame sheltering an icon heart. Only the troita niche has a roof. */
 export function nicheSVG(id: string, opts: { roof?: boolean; thread?: boolean; mark?: Mark; icon?: boolean }): string {
@@ -39,9 +43,19 @@ function troitaIcon(): string {
     <g class="flame" style="transform-box:fill-box"><ellipse cx="75" cy="156" rx="2.8" ry="5" fill="${C.gold}"/><ellipse cx="75" cy="157" rx="1.4" ry="3" fill="${C.wax}"/></g>`;
 }
 
-/** A lintel and nothing: the far dark reaches the cloth through it. Never a drop target. */
+/** The lintel, two jambs and the far dark between them. */
+function doorFrame(): string {
+  return `<rect x="4" y="26" width="52" height="20" fill="${C.woodMid}" stroke="${C.soot}" stroke-width="2"/><rect x="4" y="46" width="6" height="158" fill="${C.earth}" stroke="${C.soot}" stroke-width="1.5"/><rect x="50" y="46" width="6" height="158" fill="${C.earth}" stroke="${C.soot}" stroke-width="1.5"/><rect x="10" y="46" width="40" height="158" fill="${C.nicheDark}"/>`;
+}
+
+/** A lintel and nothing: the far dark reaches the cloth through it. A drop target only for your card, in her door. */
 export function darkDoorSVG(): string {
-  return `<svg viewBox="0 0 60 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="4" y="26" width="52" height="20" fill="${C.woodMid}" stroke="${C.soot}" stroke-width="2"/><rect x="4" y="46" width="6" height="158" fill="${C.earth}" stroke="${C.soot}" stroke-width="1.5"/><rect x="50" y="46" width="6" height="158" fill="${C.earth}" stroke="${C.soot}" stroke-width="1.5"/><rect x="10" y="46" width="40" height="158" fill="${C.nicheDark}"/></svg>`;
+  return `<svg viewBox="0 0 60 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${doorFrame()}</svg>`;
+}
+
+/** The Bride stands in the door: a pale veil in the dark and the cununie's wreath, the one blue (drawn in art.ts). */
+export function brideSVG(): string {
+  return `<svg viewBox="0 0 60 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${doorFrame()}<rect x="18" y="92" width="24" height="112" fill="${C.wax}" opacity=".16"/><g transform="translate(0 64) scale(.5)">${ART.cununie()}</g></svg>`;
 }
 
 /** Beeswax burning down; `frac` is what remains, 0..1. */
@@ -56,11 +70,6 @@ export function candleSVG(frac: number, opts: { out?: boolean; slow?: boolean } 
   return `<svg viewBox="0 0 24 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2" y="70" width="20" height="6" fill="${C.woodMid}" stroke="${C.soot}" stroke-width="1"/>
     <rect x="5" y="${top}" width="14" height="${h}" fill="${C.wax}" stroke="${C.soot}" stroke-width="1.2"/><rect x="6" y="${top}" width="12" height="1.5" fill="${C.lime}"/>${drips}
     <line x1="12" y1="${top}" x2="12" y2="${top - 3}" stroke="${C.soot}" stroke-width="1"/>${flame}</svg>`;
-}
-
-/** The candle's clay dish: the one wax slot (chapter §2). */
-export function dishSVG(): string {
-  return `<svg viewBox="0 0 80 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 7 Q40 -1 76 7 L70 16 Q40 22 10 16 Z" fill="${C.earth}" stroke="${C.soot}" stroke-width="1.6"/><path d="M12 9 Q40 4 68 9" fill="none" stroke="${C.woodLight}" stroke-width="1" opacity=".7"/></svg>`;
 }
 
 /** Wheat grains on a Fir de dor's edge: one falls at each close, silently. */
@@ -102,7 +111,7 @@ export function rotateSVG(): string {
     <path d="M110 30 Q132 40 130 66" fill="none" stroke="${C.wax}" stroke-width="1.6"/><path d="M125 60 L130 67 L135 60" fill="none" stroke="${C.wax}" stroke-width="1.6"/></svg>`;
 }
 
-/** Frant: hemp cords across a niche's opening, as across a bound card (prototype's Legat state). */
+/** The priest's cords across URNESTE and ARATA-TE while his service runs (R69): hidden until the niche is locked. */
 export function cordSVG(): string {
   const cords = [72, 102, 132, 162]
     .map((y) => `<path d="M14 ${y} L136 ${y + 22}" stroke="${C.woodLight}" stroke-width="4.5"/><path d="M14 ${y} L136 ${y + 22}" stroke="${C.soot}" stroke-width="4.5" stroke-dasharray="3 3"/>`)
@@ -110,21 +119,39 @@ export function cordSVG(): string {
   return `<svg viewBox="0 0 150 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${cords}</svg>`;
 }
 
-/** Vigoare: three wax drops by the dish; a lost one goes dark. */
+/** Putere: wax drops by the candle; a held one is full limewash in a soot contour, a spent one an empty dotted outline (R94). */
 export function pipsSVG(left: number, total: number): string {
   let s = '';
   for (let i = 0; i < total; i++) {
-    const x = 10 + i * 20;
-    s += `<path d="M${x} 2 Q${x + 5} 9 ${x} 12 Q${x - 5} 9 ${x} 2 Z" fill="${i < left ? C.wax : C.soot}" stroke="${C.soot}" stroke-width="1.2"/>`;
+    const x = 8 + i * 16;
+    const d = `M${x} 2 Q${x + 5} 9 ${x} 12 Q${x - 5} 9 ${x} 2 Z`;
+    s += i < left
+      ? `<path d="${d}" fill="${C.lime}" stroke="${C.soot}" stroke-width="1.4"/>`
+      : `<path d="${d}" fill="none" stroke="${C.waxDim}" stroke-width="1.2" stroke-dasharray="2 1.5"/>`;
   }
-  return `<svg viewBox="0 0 ${total * 20} 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${s}</svg>`;
+  return `<svg viewBox="0 0 ${total * 16} 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${s}</svg>`;
 }
 
-/** A memorial dish on the plank: empty while the day waits, coliva with a cross when kept, dark when missed. */
-export function markSVG(state: 'waiting' | 'held' | 'missed'): string {
-  const dish = `<path d="M3 22 Q22 30 41 22 L37 30 Q22 35 7 30 Z" fill="${state === 'missed' ? C.soot : C.earth}" stroke="${C.soot}" stroke-width="1.4"/>`;
-  const heap = state === 'held'
-    ? `<path d="M6 22 Q22 4 38 22 Z" fill="${C.lime}" stroke="${C.soot}" stroke-width="1.4"/><path d="M22 11 V20 M18 15.5 H26" stroke="${C.soot}" stroke-width="1.6"/>`
-    : '';
-  return `<svg viewBox="0 0 44 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${heap}${dish}</svg>`;
+/**
+ * One tally band under your card (R61, R75): the person's motif at an ink that deepens with their
+ * standing (0.35 at nothing, 1 at the cap), then on its right a mark per Amintire kept: strength 0 a
+ * dot, 1 a short stroke, 2 a tall stroke, 3 (a Minune) a small cross; seven at most, then a plus.
+ */
+export function tallyBandSVG(hem: Hem, amintiri: Amintire[], standingM: number, capM: number): string {
+  const id = `tally-${hem}`;
+  const defs = hemPattern(hem, id, C.soot);
+  const ink = (0.35 + 0.65 * Math.min(1, Math.max(0, standingM) / Math.max(1, capM))).toFixed(3);
+  const bandSvg = defs === null ? ochiulDeschis(0, 2, 60, C.soot) : `<rect x="0" y="0" width="60" height="12" fill="url(#${id})"/>`;
+  let marks = '';
+  amintiri.slice(0, 7).forEach((a, i) => {
+    const x = 65 + i * 6;
+    switch (Math.max(0, Math.min(3, a.strength))) {
+      case 0: marks += `<circle cx="${x}" cy="8.5" r="1.6" fill="${C.soot}"/>`; break;
+      case 1: marks += `<path d="M${x} 4 V11" stroke="${C.soot}" stroke-width="2.4"/>`; break;
+      case 2: marks += `<path d="M${x} 1 V11" stroke="${C.soot}" stroke-width="2.4"/>`; break;
+      default: marks += `<path d="M${x} 1 V11 M${x - 2.5} 4 H${x + 2.5}" stroke="${C.soot}" stroke-width="2.2"/>`;
+    }
+  });
+  if (amintiri.length > 7) marks += `<path d="M106 5 V11 M103 8 H109" stroke="${C.soot}" stroke-width="1.6"/>`;
+  return `<svg viewBox="0 0 108 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>${defs ?? ''}</defs><g opacity="${ink}">${bandSvg}</g>${marks}</svg>`;
 }

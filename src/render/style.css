@@ -1,5 +1,6 @@
-/* Tokens and table styles lifted from priveghi_prototype_v4.html. Dark only (candlelight logic).
-   Selection is told by contour weight, never glow; nothing pulses, bounces or springs. */
+/* Tokens and table styles lifted from priveghi_prototype_v4.html, on the v3 layout (RULINGS R61).
+   Dark only (candlelight logic). Selection is told by contour weight, never glow; nothing pulses,
+   bounces or springs; the flame alone breathes. */
 @import './fonts.css';
 
 :root {
@@ -21,6 +22,7 @@
   --paper: #e4d7b2;
   --linen: #d8ccab;
   --soot-smudge: rgba(23, 19, 16, .55);
+  --ink-dim: #3b3027;
   /* type */
   --display: 'Cormorant Unicase', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --body: 'Alegreya', Georgia, 'Times New Roman', serif;
@@ -42,8 +44,11 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stage .cloth { position: absolute; left: 60px; right: 60px; top: 352px; bottom: 30px; background: var(--earth); }
 .stage .cloth .linen { position: absolute; inset: 14px; background: var(--linen); box-shadow: inset 0 0 0 2px var(--soot); }
 .stage .cloth .border { position: absolute; left: 20px; top: 20px; width: calc(100% - 40px); height: calc(100% - 40px); pointer-events: none; }
-.stage .pool { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; }
+.stage .pool { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; transition-property: opacity; transition-timing-function: ease; }
 .stage .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 62% 78%, transparent 30%, rgba(17, 14, 11, .55) 75%, rgba(17, 14, 11, .85) 100%); }
+/* dusk (R67): the table darkens while it is night; the duration is TUNING.dusk_fade_ms, set inline on the dusk and the pool */
+.stage .dusk { position: absolute; inset: 0; pointer-events: none; background: rgba(17, 14, 11, 0); transition-property: background; transition-timing-function: ease; }
+.stage .dusk.on { background: rgba(17, 14, 11, .5); }
 
 /* the far side: another seat, dark, opened toward you (inverse perspective) */
 .stage .farside {
@@ -54,24 +59,30 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stage .farcandle { position: absolute; left: 1120px; top: 54px; width: 10px; height: 34px; opacity: .8; }
 .stage svg { display: block; width: 100%; height: 100%; }
 
-/* the screen of verbs */
-.verb { position: absolute; width: 150px; height: 236px; }
+/* the screen of verbs (sizes from layout.ts, set inline) */
+.verb { position: absolute; }
 .verb svg.niche { width: 150px; height: 210px; }
 .verb .vname {
   position: absolute; left: -9px; right: -9px; top: 206px; text-align: center; font-family: var(--display); font-weight: 500;
   font-size: 17px; color: var(--wax); line-height: 1.1; text-transform: uppercase; letter-spacing: .03em;
 }
-.verb .taper { position: absolute; left: 136px; top: 100px; width: 22px; height: 86px; }
 .verb .rim { opacity: 0; transition: opacity .3s; }
 .verb.working .rim { opacity: 1; }
 .verb.accept .nicheframe { stroke-width: 4; }
+/* the priest's cords (step 4): hidden until the niche is locked */
+.verb .cord { position: absolute; left: 0; top: 0; width: 150px; height: 210px; display: none; pointer-events: none; }
+.verb.locked .cord { display: block; }
+.verb:focus-visible, .flame-hit:focus-visible, .tally:focus-visible, .daytag:focus-visible, .darkdoor:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
 .darkdoor { position: absolute; width: 60px; height: 236px; }
-.darkdoor svg { height: 210px; }
+.darkdoor > svg { height: 210px; }
+/* the Bride stands in the door (phase door, the Nunta ending): the cununie, the only blue */
+.darkdoor .bridefig { position: absolute; left: 10px; top: 46px; width: 40px; height: 158px; display: none; pointer-events: none; }
+.darkdoor.bride .bridefig { display: block; }
 
 /* cards: one element per stack, in a layer above the pool and the vignette (as in the prototype) */
 .stage .cards { position: absolute; inset: 0; pointer-events: none; }
 .stage .cards > * { pointer-events: auto; }
-.stack { position: absolute; left: 0; top: 0; width: 108px; height: 151px; transition: transform .32s cubic-bezier(.2, 0, 0, 1); will-change: transform; }
+.stack { position: absolute; left: 0; top: 0; width: 108px; height: 151px; transition: transform .32s cubic-bezier(.2, 0, 0, 1), opacity .8s ease; will-change: transform; }
 .stack .face, .stack .under { position: absolute; inset: 0; }
 .stack.settle { transition: none; }
 .stack .face svg { filter: drop-shadow(var(--sx, 3px) var(--sy, 4px) 2px var(--soot-smudge)); }
@@ -79,102 +90,114 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .stack .u1 { transform: translate(3px, 3px); }
 .stack .u2 { transform: translate(6px, 6px); }
 .stack.n2 .u1, .stack.n3 .u1, .stack.n3 .u2 { display: block; }
-/* the count of a stack: a paper tag, not a badge */
+/* the count of a stack: a paper tag, not a badge, on the left edge a spread hand always shows (R93) */
 .count {
-  position: absolute; right: -8px; top: -8px; min-width: 26px; height: 19px; padding: 0 4px; background: var(--lime); color: var(--soot);
-  border: 1.5px solid var(--soot); font: 14px/16px var(--label); text-align: center;
+  position: absolute; left: -8px; top: -8px; min-width: 30px; height: 22px; padding: 0 4px; background: var(--lime); color: var(--soot);
+  border: 1.5px solid var(--soot); font: 18px/19px var(--label); text-align: center;
 }
 .count:empty { display: none; }
+/* a Dor's stub: three grains on its edge, one fewer each dawn */
 .stack .grains { position: absolute; left: 0; top: 14px; width: 108px; height: 10px; }
-.stack.selected .face-contour { stroke-width: 3.2; }
+/* a resting thing is dimmed; the living are asleep at night; your card is not lifted (until her door) */
+.stack[data-resting="1"] { opacity: .5; }
+.stack[data-asleep="1"] { opacity: .55; }
+.stack.you { cursor: default; }
+.stack.selected .face-contour, .stack:focus-visible .face-contour, .cards .tied.selected .face-contour { stroke-width: 3.2; }
+.stack:focus-visible { outline: none; }
 .cards .heart { position: absolute; width: 108px; height: 151px; }
 .cards .side { position: absolute; width: 45px; height: 63px; }
 .cards .heart svg, .cards .side svg { filter: drop-shadow(0 2px 2px var(--soot-smudge)); }
 .cards .side .face { position: absolute; inset: 0; }
-.cards .side .count { right: -7px; top: -9px; min-width: 22px; height: 16px; font-size: 12px; line-height: 13px; }
-
-/* the plank, the candle and its dish, bread and salt */
-.plank { position: absolute; width: 124px; height: 296px; }
-.maincandle { position: absolute; left: 1010px; top: 410px; width: 40px; height: 150px; pointer-events: none; }
-.dish { position: absolute; left: 990px; top: 538px; width: 80px; height: 22px; }
-.candle-label {
-  position: absolute; left: 970px; width: 120px; top: 563px; text-align: center; font-family: var(--display); font-weight: 500;
-  font-size: 16px; color: var(--earth); text-transform: uppercase; letter-spacing: .03em; line-height: 1;
-}
-.stilllife { position: absolute; left: 858px; top: 556px; width: 180px; height: 120px; pointer-events: none; }
-/* the pre-cue: the flame gutters, low and dim, for the last 0.4 s of the day */
-.maincandle.gutter .flame { animation: none; transform: scale(.75, .5); opacity: .7; }
-
-/* step 3: Frant's cords, the sill, the day, the candle's pips, the wreath, a refusal's strip */
-.verb .cord { position: absolute; left: 0; top: 0; width: 150px; height: 210px; display: none; pointer-events: none; }
-.verb.locked .cord { display: block; }
-.verb:focus-visible, .dish:focus-visible, .flame-hit:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
+.cards .heart:empty, .cards .side:empty { pointer-events: none; }
 .cards .tied { position: absolute; width: 30px; height: 42px; }
 .cards .tied svg { filter: drop-shadow(0 1px 1px var(--soot-smudge)); }
 .cards .tied:empty { display: none; }
 /* small things a thumb must still find: at least 44 CSS px on the phone */
 .cards .tied::after { content: ''; position: absolute; inset: -22px -16px; }
 .daytag::after { content: ''; position: absolute; inset: -30px -24px; }
-.daytag {
-  position: absolute; left: 16px; top: 12px; padding: 2px 12px 3px; background: var(--paper); color: var(--soot);
-  font: 600 16px/1.3 var(--body); border: 1.5px solid var(--soot); box-shadow: 3px 4px 0 var(--soot-smudge);
-}
-.pips { position: absolute; left: 1000px; top: 584px; width: 60px; height: 14px; }
-.marks { position: absolute; display: flex; gap: 8px; }
-.marks .mark { height: 36px; }
-.marks.accept { outline: 3px solid var(--soot); outline-offset: 4px; }
-.dish.accept svg path:first-child { stroke-width: 3.2; }
-.flame-hit { position: absolute; width: 90px; height: 90px; border-radius: 50%; cursor: pointer; }
-.wreath { position: absolute; left: 602px; top: 0; width: 76px; height: 106px; }
-.wreath[hidden] { display: none; }
 .lifted { transition: none !important; z-index: 20; cursor: grabbing; }
 .lifted svg { filter: drop-shadow(6px 9px 3px var(--soot-smudge)) !important; }
-.stack:focus-visible .face-contour, .selected .face-contour { stroke-width: 3.2; }
-.stack:focus-visible { outline: none; }
+
+/* the plank: your card, the five tally bands, the forecast tag (sizes from layout.ts) */
+.plank { position: absolute; }
+.tally { position: absolute; cursor: pointer; }
+.tally::after { content: ''; position: absolute; inset: -6px -8px; }
+.tally-band { position: absolute; left: 0; width: 108px; }
+.tally.accept { outline: 3px solid var(--soot); outline-offset: 4px; }
+.forecast {
+  position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1px 4px 2px;
+  background: var(--paper); color: var(--soot); border: 1.5px solid var(--soot); box-shadow: 3px 4px 0 var(--soot-smudge); line-height: 1;
+}
+.forecast .lbl { font: 10px/1 var(--label); font-variant: small-caps; letter-spacing: .1em; }
+.forecast .n { font: 600 19px/1 var(--body); letter-spacing: .04em; white-space: nowrap; }
+
+/* the candle (STINGE), the Putere drops, bread and salt: placed and sized from layout.ts */
+.maincandle { position: absolute; pointer-events: none; }
+.maincandle .flame { animation-delay: var(--phase, 0s); }
+.maincandle.out { filter: brightness(.85); }
+.candle-label {
+  position: absolute; text-align: center; font-family: var(--display); font-weight: 500;
+  font-size: 16px; color: var(--earth); text-transform: uppercase; letter-spacing: .03em; line-height: 1;
+}
+.putere { position: absolute; }
+.stilllife { position: absolute; pointer-events: none; }
+/* the pre-cue: the flame gutters, low and dim, for the last 0.4 s of the day */
+.maincandle.gutter .flame { animation: none; transform: scale(.75, .5); opacity: .7; }
+.flame-hit { position: absolute; border-radius: 50%; cursor: pointer; }
+
+/* the day tag and the strip */
+.daytag {
+  position: absolute; left: 16px; top: 12px; padding: 2px 12px 3px; background: var(--paper); color: var(--soot);
+  font: 600 19px/1.3 var(--body); border: 1.5px solid var(--soot); box-shadow: 3px 4px 0 var(--soot-smudge); cursor: pointer;
+}
+/* the strip sits on the cloth's lower border, under the kit row's names, so it hides no card (R93) */
 .toast {
-  position: absolute; left: 230px; bottom: 44px; max-width: 520px; background: var(--paper); color: var(--soot); font: 19px/1.35 var(--body);
+  position: absolute; left: 230px; bottom: 0; max-width: 640px; background: var(--paper); color: var(--soot); font: 19px/1.35 var(--body);
   padding: 8px 16px; border: 2px solid var(--soot); box-shadow: 4px 5px 0 var(--soot-smudge); opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 40;
 }
 .toast.show { opacity: 1; }
+.toast .nm { font: 600 22px var(--display); margin-right: 10px; }
+.toast .sub { font: 22px var(--label); letter-spacing: .03em; margin-right: 10px; }
+.toast .asp { display: inline-flex; gap: 8px; align-items: center; vertical-align: -2px; }
+.toast .asp:empty { display: none; }
+.toast .match { font: 22px var(--label); letter-spacing: .04em; margin-left: 10px; }
+.toast .row { display: inline-flex; align-items: center; gap: 8px; margin-right: 14px; }
+.toast .row .nm { font-size: 18px; margin-right: 0; }
+.toast .row .n { font-size: 16px; }
+.toast .chip, .page .chip { display: inline-block; width: 54px; height: 6px; }
+.toast .band, .page .band { display: inline-block; width: 72px; height: 10px; }
+.toast .n, .page .n { font: 18px var(--label); letter-spacing: .1em; }
 
-/* step 5: the boot's darkness, the candle that becomes the table's, the Bride's dimming */
+/* step 5: the boot's darkness over everything but the troita's small pool */
 .night { position: absolute; inset: 0; pointer-events: none; z-index: 25; opacity: 0; transition: opacity 1.8s ease; }
 .booting .night { opacity: 1; transition: none; }
-.booting:not(.dark0) .night { --hole: 110px; }
-.dark0 .night { background: rgba(17, 14, 11, .985) !important; }
-.dark0 .verb[data-niche="troita"] .flame, .dark0 .cards .tied { visibility: hidden; }
 .booting .cards > :not(.tied), .booting .flame-hit, .booting .daytag { pointer-events: none; }
-/* zero text until the candle is lit (brief §3.1) */
-.booting .daytag, .booting .vname, #stage.booting ~ .page { visibility: hidden !important; }
-.maincandle { transition: opacity 1.8s ease, transform 1.8s cubic-bezier(.2, 0, 0, 1); }
-.booting .maincandle { opacity: 0; transform: translate(-830px, -250px) scale(.6); transition: none; }
-.bride .cards > *, .bride .verb:not([data-niche="troita"]), .bride .maincandle, .bride .dish, .bride .farcandle, .bride .stilllife {
-  filter: saturate(.45) brightness(.7) !important; transition: filter 2.4s ease;
-}
+.booting .daytag, .booting .vname, .booting .forecast, #stage.booting ~ .page { visibility: hidden !important; }
 
 /* the page: paper beside the table, below it, or over it on a phone */
 .page {
   position: absolute; left: 0; top: 0; transform-origin: 0 0; background: var(--paper); color: var(--soot);
   font: 19px/1.45 var(--body); padding: 22px 24px; box-shadow: inset 0 0 0 2px var(--soot); overflow: hidden;
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 14px;
 }
-.page.below { flex-direction: row; align-items: flex-start; gap: 36px; }
+.page.below { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 12px 36px; padding: 16px 24px; }
 .page.phone { display: none; box-shadow: inset 0 0 0 2px var(--soot), -6px 0 0 var(--soot-smudge); z-index: 50; }
 .page.phone.open { display: flex; }
 .page .day { font: 600 24px/1.2 var(--display); }
-.page .nm { font: 600 24px/1.2 var(--display); }
-.page .sub { font: 18px var(--label); font-variant: small-caps; letter-spacing: .06em; color: #3b3027; }
-.page .line { margin: 6px 0 0; font-style: italic; }
+.page .counts { line-height: 1.6; }
+.page .counts .n { font: 18px var(--label); letter-spacing: .04em; }
+.page .drops { display: inline-block; width: 64px; height: 14px; vertical-align: -1px; }
+.page .tally-rows { display: flex; flex-direction: column; gap: 2px; }
+.page .tally-rows .row { display: flex; align-items: center; gap: 10px; }
+.page .tally-rows .row .nm { font: 600 17px/1.3 var(--display); min-width: 120px; }
+.page.below .tally-rows .row .nm { min-width: 110px; }
+.page .focus .nm { font: 600 24px/1.2 var(--display); }
+.page .sub { font: 18px var(--label); font-variant: small-caps; letter-spacing: .06em; color: var(--ink-dim); }
+.page .asp { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+.page .match { font: 18px var(--label); font-variant: small-caps; letter-spacing: .04em; }
 .page .said { margin: 0; font-style: italic; }
-.page .asp { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
-.page .asp .chip, .toast .chip { width: 42px; height: 14px; }
-.page .n, .toast .n { font: 18px var(--label); letter-spacing: .1em; }
 .page .end .title { font: 600 30px/1.2 var(--display); margin-bottom: 8px; }
-.page .end .line { font-size: 22px; }
-.page .ears { height: 28px; }
-.toast .nm { font: 600 19px var(--display); margin-right: 10px; }
-.toast .sub { font: 16px var(--label); font-variant: small-caps; margin-right: 10px; }
-.toast .asp { display: inline-flex; gap: 8px; align-items: center; vertical-align: -2px; }
+.page .end .bride, .page .door .bride { width: 76px; height: 106px; }
 
 /* the flame breathes in two irregular frames; nothing else moves on its own */
 .flame { transform-origin: 50% 100%; animation: breathe 1.3s steps(1, end) infinite; }
@@ -213,12 +236,14 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   .stack { transition-duration: .09s; }
   .toast { transition-duration: .09s; }
   .night, .maincandle { transition-duration: .2s; }
-  .bride .cards > * { transition-duration: .2s; }
+  .stage .dusk, .stage .pool { transition-duration: .2s !important; }
 }
 
 /* ?sheet: every card face on one page */
 .sheet { position: fixed; inset: 0; display: grid; grid-template-columns: repeat(6, 180px); gap: 22px; padding: 24px; background: var(--soot); overflow: auto; align-content: start; justify-content: center; }
 .sheet-card { width: 180px; height: 252px; }
+/* an SVG with only a viewBox would take the cell's width and its own height: the Bride's door (60×210) must fit the cell */
+.sheet-card svg { display: block; width: 100%; height: 100%; }
 
 /* ?icon: the troita niche, framed for the home screen */
 .icon-mark { position: fixed; left: 0; top: 0; width: 512px; height: 512px; background: var(--room); display: grid; place-items: center; }

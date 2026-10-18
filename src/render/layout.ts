@@ -1,14 +1,39 @@
-// One 1280x720 reference frame (brief §2.2). The prototype's bands are kept: far dark 0-96, the
-// screen of verbs 118-354, the cloth 352-690. Inside the cloth: the plank at the far left, the
-// kit and road row nearer the niches, the cloth row nearer the hand, Jale in the corner, the candle.
-import type { Kind } from '../engine';
-
+// One 1280x720 reference frame (brief §2.2) on the v3 layout (RULINGS R61): far dark 0-96, the
+// screen of verbs 118-354, the cloth 352-690. Inside the cloth: the plank at the far left with your
+// card, the five tally bands and the forecast tag under it; the cloth row (Dor, fragments, the Semn,
+// the living); the kit row (the things, then the road); the candle at the cloth's head.
 export const STAGE = { w: 1280, h: 720 };
 export const CARD = { w: 108, h: 151 };
-/** The table candle's box; its SVG (24x80) is fitted to the width and centred, as in the prototype. */
-export const CANDLE = { x: 1010, y: 410, w: 40, h: 150 };
-/** Where a dropped card reaches the candle: the candle, its dish and its label. */
-export const CANDLE_BOX = { x: 985, y: 400, w: 90, h: 175 };
+
+export const NICHE = { w: 150, h: 236, gap: 18, top: 118 };
+const DOOR_W = 60;
+const ROW_W = 6 * NICHE.w + DOOR_W + 6 * NICHE.gap;
+export const nicheX = (i: number) => (STAGE.w - ROW_W) / 2 + i * (NICHE.w + NICHE.gap);
+export const DOOR_X = nicheX(6);
+/** Where a niche seats the open commit: the Dor in the heart seat, its target in the side seat (prototype R10). */
+export const SEAT = { x: 21, y: 40 };
+export const SIDE = { x: 83, y: 45, w: 45, h: 63 };
+/** The troita's sill: three tied Dor stand on its ledge. */
+export const SILL = { x: 30, y: 146, w: 30, h: 42, gap: 4 };
+
+export const PLANK = { x: 76, y: 372, w: 124, h: 296 };
+/** Your card on the plank (the cross, after the burial). */
+export const YOU_AT = { x: 84, y: 392 };
+/** Five tally bands under your card, one per source in order mama, draguta, frate, dusman, preot. */
+export const TALLY = { x: 84, y: 552, w: 108, h: 12, gap: 16 };
+/** The forecast tag: now, then Uitare at the next three dawns. */
+export const FORECAST = { x: 80, y: 636, w: 116, h: 28 };
+
+/** The table candle's box at the cloth's right edge (R92); its SVG (24x80) is fitted to the width and centred. */
+export const CANDLE = { x: 1156, y: 410, w: 40, h: 150 };
+/** STINGE, under the candle, inside the linen (its ink is the cloth border's colour). */
+export const CANDLE_LABEL = { x: 1136, y: 563, w: 80 };
+/** The flame's tap target: a 90 px disc, 44 CSS px or more at the phone's scale. */
+export const FLAME_HIT = 90;
+/** Putere as wax drops under the candle's label. */
+export const PUTERE = { x: 1144, y: 584, w: 64, h: 14 };
+/** Bread and salt (R13), in the corner by the candle. */
+export const STILL_LIFE = { x: 1040, y: 575, w: 180, h: 120 };
 
 /** The one large light: the candle's flame, lower as the wax burns (candleSVG's geometry). */
 export function flameAt(frac: number): { x: number; y: number } {
@@ -19,29 +44,12 @@ export function flameAt(frac: number): { x: number; y: number } {
 }
 export const FLAME = flameAt(1);
 
-export const NICHE = { w: 150, h: 236, gap: 18, top: 118 };
-const DOOR_W = 60;
-const ROW_W = 6 * NICHE.w + DOOR_W + 6 * NICHE.gap;
-export const nicheX = (i: number) => (STAGE.w - ROW_W) / 2 + i * (NICHE.w + NICHE.gap);
-export const DOOR_X = nicheX(6);
+export interface Row { x: number; y: number; right: number }
 
-export const PLANK = { x: 76, y: 372, w: 124, h: 296 };
-export const ON_PLANK = { x: PLANK.x + 8, y: PLANK.y + 50 };
-/** Cel Nenuntit's memorial marks on the plank, below him: one small dish per soroc. */
-export const MARKS = { x: PLANK.x + 14, y: PLANK.y + 214, w: 44, gap: 8 };
-export const JALE = { x: 1096, y: 520 };
-
-interface Row { x: number; y: number; right: number; order: Kind[] }
-
-/** Objects and places: the kit and the road (chapter §2's rows, folded onto the cloth). */
-export const ROW_KIT: Row = { x: 214, y: 376, right: 1000, order: ['codrii_vlasiei', 'plosca', 'lumanare', 'grau', 'fier', 'sare'] };
-/** People, longing, knowledge and food. Coliva sits nearest the plank it is carried to. */
-export const ROW_CLOTH: Row = {
-  x: 214,
-  y: 530,
-  right: 850,
-  order: ['coliva', 'rada', 'negustor', 'fir_de_dor', 'cantec_de_leagan', 'nume', 'bocet', 'binecuvantare'],
-};
+/** The cloth row: the Dor stacks, the fragments, the Semn, then the living present at the right end. */
+export const ROW_CLOTH: Row = { x: 214, y: 376, right: 1020 };
+/** The kit row: the things ready, the pile of resting things, then the places on the road (R91). */
+export const ROW_KIT: Row = { x: 214, y: 530, right: 955 };
 
 /** Left edges for n stacks in a row: full spacing while they fit, then they overlap like a spread hand. */
 export function rowSlots(row: Row, n: number): number[] {

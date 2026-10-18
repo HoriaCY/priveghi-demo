@@ -88,7 +88,8 @@ impl Lucru {
             Lucru::Oglinda => &[Fel::Dragoste, Fel::Vrajba],
             Lucru::Cutit => &[Fel::Vrajba, Fel::Frate],
             Lucru::Fluier => &[Fel::Frate, Fel::Dragoste],
-            Lucru::Arc | Lucru::Pomana => &[],
+            Lucru::Arc => &[Fel::Vrajba],
+            Lucru::Pomana => &[],
         }
     }
 
@@ -387,6 +388,8 @@ pub enum Event {
     /// The Bride stands in the dark door.
     BrideStands,
     Treci,
+    /// You would not go.
+    Ramai,
     Ended {
         ending: Ending,
     },
@@ -521,6 +524,10 @@ pub enum Action {
     Resume,
     /// Your card on the dark door, when the Bride stands in it.
     Treci,
+    /// You would not go: the Bride stood in the door and you remain (Ratacire, chapter §10).
+    Ramai,
+    /// After an ending, or in her door: another wake from the dark, a new dead.
+    Again,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

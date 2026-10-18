@@ -25,6 +25,12 @@ export const M = {
     `<pattern id="${id}" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 1 L7.2 4.8 L11 6 L7.2 7.2 L6 11 L4.8 7.2 L1 6 L4.8 4.8 Z" fill="none" stroke="${c}" stroke-width="1"/></pattern>`,
   pom: (id: string, c: string) =>
     `<pattern id="${id}" width="10" height="14" patternUnits="userSpaceOnUse"><path d="M5 13 V2 M5 5 L2 3 M5 5 L8 3 M5 8 L2 6 M5 8 L8 6 M5 11 L2.5 9.5 M5 11 L7.5 9.5 M5 2 L4 0.8 M5 2 L6 0.8" fill="none" stroke="${c}" stroke-width="1.1"/></pattern>`,
+  /** Rombul frant: the chain breaks mid-repeat; every third knot loses a side, its heart and its link. */
+  rombFrant: (id: string, c: string) =>
+    `<pattern id="${id}" width="24" height="8" patternUnits="userSpaceOnUse"><path d="M4 1 L7 4 L4 7 L1 4 Z M12 1 L15 4 L12 7 L9 4 Z M0 4 L1 4 M7 4 L9 4 M15 4 L16 4 M20 1 L17 4 L20 7 M20 1 L22 3" fill="none" stroke="${c}" stroke-width="1.3" stroke-linejoin="miter"/><circle cx="4" cy="4" r=".9" fill="${c}"/><circle cx="12" cy="4" r=".9" fill="${c}"/></pattern>`,
+  /** Funia despletita: the two strands twist, then part, with loose ends; the cord's last word. */
+  funiaFrayed: (id: string, l: string, d: string) =>
+    `<pattern id="${id}" width="24" height="8" patternUnits="userSpaceOnUse"><path d="M0 8 L6 0 M6 8 L12 0" stroke="${l}" stroke-width="1.6"/><path d="M-3 8 L3 0 M3 8 L9 0 M9 8 L12 4" stroke="${d}" stroke-width="1.6"/><path d="M12 0 L14 3 Q17 6 21 5 L23 7" fill="none" stroke="${l}" stroke-width="1.3" stroke-linecap="round"/><path d="M12 4 L15 6 Q18 7.5 20 5 M12 4 L15 2 Q18 0.5 22 1" fill="none" stroke="${d}" stroke-width="1.3" stroke-linecap="round"/></pattern>`,
 };
 
 export const band = (pid: string, x: number, y: number, w: number, h: number) =>

@@ -90,7 +90,7 @@ export function startAmbience(): void {
   wind = { gain };
 }
 
-/** The one great silence (LINES.sabbathWater): the room goes away and nothing sounds, for six seconds, once. */
+/** The one great silence (the Uitare ending): the room goes away and nothing sounds, for six seconds, once. */
 export function silence(seconds: number): void {
   const c = ctx;
   if (!c) return;
@@ -129,13 +129,13 @@ export const SOUND = {
     const t = c.currentTime;
     noise(c, 0.09, 'bandpass', 500, 9, 0.5 * ui, t, 0.01).frequency.exponentialRampToValueAtTime(1400, t + 0.09);
   },
-  /** A page: soft paper noise with a slow envelope. The door's answer. */
+  /** A page: soft paper noise with a slow envelope. A Pomenire, a fragment, a card read. */
   page(): void {
     const c = ctx;
     if (!c || muted()) return;
     noise(c, 0.16, 'lowpass', 2600, 0.7, 0.25 * ui, c.currentTime, 0.05);
   },
-  /** A wax seal pressed: wax fed to the candle, coliva laid on the plank. */
+  /** A wax seal pressed: an act resolved, an Amintire kept. */
   seal(): void {
     const c = ctx;
     if (!c || muted()) return;
@@ -187,21 +187,13 @@ export const SOUND = {
       o.stop(t + hold + 0.1);
     }
   },
-  /** Rada's held note: grief mourned, nothing gained. */
-  heldNote(): void {
+  /** A breath across a flame: STINGE. A short lowpass noise swell that falls as it fades; nothing tonal. */
+  blow(): void {
     const c = ctx;
     if (!c || muted()) return;
     const t = c.currentTime;
-    const o = c.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = TUNING.held_note_hz;
-    const g = c.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.12, t + 0.35);
-    g.gain.setValueAtTime(0.12, t + TUNING.held_note_s - 0.5);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + TUNING.held_note_s);
-    o.connect(g).connect(c.destination);
-    o.start(t);
-    o.stop(t + TUNING.held_note_s + 0.05);
+    const f = noise(c, 0.42, 'lowpass', 700, 0.6, 0.45 * ui, t, 0.14);
+    f.frequency.setValueAtTime(700, t);
+    f.frequency.exponentialRampToValueAtTime(260, t + 0.42);
   },
 };
