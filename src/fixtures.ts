@@ -2,9 +2,9 @@
 // (charter section 9); the engine decides what they produce. The greedy considered hand asks the
 // engine for every match (`matches`, which says -1 for a thing that rests) and never reads a rule of
 // its own; it acts by night, two knocks a night, so the house stays under the priest's threshold (R90).
-import type { Action, Wake } from './engine';
+import type { Action, Card, Wake } from './engine';
 
-export const FIXTURES = ['start', 'night', 'wake', 'dark', 'door', 'preot', 'tarus', 'uitare'] as const;
+export const FIXTURES = ['start', 'night', 'wake', 'dark', 'door', 'preot', 'tarus', 'uitare', 'played'] as const;
 export type Fixture = (typeof FIXTURES)[number];
 
 export const isFixture = (name: string | null): name is Fixture => FIXTURES.includes(name as Fixture);
@@ -22,6 +22,21 @@ export function applyFixture(wake: Wake, name: Fixture, now: number): void {
       return;
     case 'night':
       return act({ type: 'stinge' });
+    case 'played': {
+      // for review: the mother's longing in her kerchief, played well; the enemy's in the mirror, skipped
+      const card = (p: (c: Card) => boolean) => {
+        const c = wake.state().cards.find(p);
+        if (!c) throw new Error(`fixture ${name}: a card is missing`);
+        return c.id;
+      };
+      const mama = card((c) => c.kind === 'dor' && c.from === 'mama' && c.at === 'cloth');
+      act({ type: 'place', dor: mama, on: card((c) => c.kind === 'lucru' && c.lucru === 'broboada') });
+      act({ type: 'resolve', dor: mama, grade: 'bun' });
+      const dusman = card((c) => c.kind === 'dor' && c.from === 'dusman' && c.at === 'cloth');
+      act({ type: 'place', dor: dusman, on: card((c) => c.kind === 'lucru' && c.lucru === 'oglinda') });
+      act({ type: 'resolve', dor: dusman, grade: 'skipped' });
+      return;
+    }
     case 'dark':
       // idle closes until the house stops lighting the candle
       for (let i = 0; i < 12 && awake() && wake.state().candle; i++) close();

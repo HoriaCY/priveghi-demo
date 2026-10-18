@@ -9,7 +9,7 @@ import { TUNING } from '../tuning';
 import { cardBackSVG } from './card';
 import { faceSVG, hemOfPerson } from './catalog';
 import { brideSVG, candleSVG, cordSVG, darkDoorSVG, grainRowSVG, nicheSVG, pipsSVG, plankSVG, stillLifeSVG, tallyBandSVG } from './furniture';
-import { CANDLE, CANDLE_LABEL, DOOR_X, FLAME_HIT, FORECAST, NICHE, PLANK, PUTERE, ROW_CLOTH, ROW_KIT, SEAT, SIDE, SILL, STILL_LIFE, TALLY, YOU_AT, flameAt, nicheX, rowSlots, shadowFor } from './layout';
+import { CANDLE, CANDLE_LABEL, CARD, DOOR_X, FLAME_HIT, FORECAST, NICHE, PLANK, PUTERE, ROW_CLOTH, ROW_KIT, SEAT, SIDE, SILL, STILL_LIFE, TALLY, YOU_AT, flameAt, nicheX, rowSlots, shadowFor } from './layout';
 import { M } from './motifs';
 import { C } from './palette';
 
@@ -29,6 +29,8 @@ const NICHES: { id: Verb; opts: NicheOpts }[] = [
 /** Row order on the kit row: the house's things, the finds, then the pomane. */
 const LUCRURI: Lucru[] = ['cana', 'broboada', 'inel', 'icoana', 'oglinda', 'cutit', 'fluier', 'arc', 'pomana'];
 const LOCURI: Loc[] = ['casa', 'tinda', 'curte', 'sat', 'biserica'];
+/** The dark door's width (style.css .darkdoor; charter section 3). */
+const DOOR_W = 60;
 
 interface Group { key: string; cards: Card[] }
 interface NicheView { el: HTMLElement; heart: HTMLElement; side: HTMLElement; sig: string }
@@ -263,14 +265,49 @@ export class Table {
     window.setTimeout(() => this.candle.classList.remove('gutter'), ms);
   }
 
-  /** The drop target under a point of the reference frame (step 3). */
-  targetAt(_x: number, _y: number): Target | null {
+  /**
+   * The drop target under a point of the reference frame: a card on the rows (the topmost where a
+   * spread hand overlaps, never the one being carried), the troita niche as the sill, the five
+   * verbs, the dark door. The flame's hit area is never one. The engine decides whether a drop fits.
+   */
+  targetAt(x: number, y: number): Target | null {
+    const inside = (bx: number, by: number, w: number, h: number) => x >= bx && x <= bx + w && y >= by && y <= by + h;
+    let hit: { id: number; z: number } | null = null;
+    for (const stack of this.stacks.values()) {
+      if (stack.classList.contains('lifted')) continue;
+      const sx = Number(stack.dataset.x);
+      const sy = Number(stack.dataset.y);
+      if (!inside(sx, sy, CARD.w, CARD.h)) continue;
+      const z = Number(stack.style.zIndex) || 0;
+      const id = Number((stack.dataset.ids ?? '').split(' ')[0]);
+      if (Number.isFinite(id) && (!hit || z > hit.z)) hit = { id, z };
+    }
+    if (hit) return { card: hit.id };
+    for (let i = 0; i < NICHES.length; i++) {
+      if (inside(nicheX(i), NICHE.top, NICHE.w, NICHE.h)) return i === 0 ? 'sill' : { niche: NICHES[i].id };
+    }
+    if (inside(DOOR_X, NICHE.top, DOOR_W, NICHE.h)) return 'door';
     return null;
   }
 
-  /** The element that answers for a target by contour weight while a card hovers over it (step 3). */
-  targetEl(_t: Target): HTMLElement | null {
-    return null;
+  /** The element that answers for a target by contour weight while a card hovers over it. */
+  targetEl(t: Target): HTMLElement | null {
+    if (t === 'sill') return this.niches.get('odihneste')!.el;
+    if (t === 'door') return this.door;
+    if ('niche' in t) return this.niches.get(t.niche)!.el;
+    return this.stackOf(t.card);
+  }
+
+  /** The stack on the rows, or the sill slot, that holds this card. */
+  stackOf(id: number): HTMLElement | null {
+    const holds = (e: HTMLElement) => (e.dataset.ids ?? '').split(' ').includes(String(id));
+    for (const stack of this.stacks.values()) if (holds(stack)) return stack;
+    return this.sill.find(holds) ?? null;
+  }
+
+  /** The side seat of the verb at work: where the open commit's target sits. */
+  seatOf(verb: Verb): HTMLElement {
+    return this.niches.get(verb)!.side;
   }
 
   private renderStacks(v: View): void {
@@ -334,6 +371,7 @@ export class Table {
   private updateStack(stack: HTMLElement, g: Group, p: { x: number; y: number }, v: View, z: number): void {
     const c = g.cards[0];
     const n = g.cards.length;
+    stack.classList.remove('gone');
     this.settle(stack, p);
     stack.style.zIndex = String(z);
     stack.classList.toggle('n2', n === 2);
@@ -357,7 +395,8 @@ export class Table {
     d.resting = resting(c, v.day) ? '1' : '0';
     // the sleepers are the sources; Rada keens and takes no Dor by night (R51, R86)
     d.asleep = c.kind === 'om' && v.night && c.fel.length > 0 ? '1' : '0';
-    const draggable = c.kind === 'dor' || c.kind === 'loc' || c.kind === 'om' || (c.kind === 'cel_nenuntit' && v.phase === 'door');
+    // nothing is carried while a play is open (the paper covers the table; the engine answers busy anyway)
+    const draggable = !v.commit && (c.kind === 'dor' || c.kind === 'loc' || c.kind === 'om' || (c.kind === 'cel_nenuntit' && v.phase === 'door'));
     if (draggable) d.drag = 'table';
     else delete d.drag;
     // the face is rebuilt only when what it shows changes (its kind, its stub, your Uitare)
@@ -419,14 +458,16 @@ export class Table {
     const tied = v.cards.filter((c) => c.at === 'sill').sort((a, b) => a.id - b.id);
     this.sill.forEach((slot, i) => {
       const c = tied[i];
-      const sig = c ? `${c.id}:${c.kind === 'dor' ? c.left : ''}` : '';
+      const sig = c ? `${c.id}:${c.kind === 'dor' ? c.left : ''}:${v.commit ? 'busy' : ''}` : '';
       if (slot.dataset.sig === sig) return;
       slot.dataset.sig = sig;
       slot.innerHTML = c ? faceSVG(`tied-${i}`, c, v.uitare) : '';
       slot.dataset.ids = c ? String(c.id) : '';
       slot.dataset.kind = c?.kind ?? '';
+      slot.classList.remove('gone');
       if (c) {
-        slot.dataset.drag = 'sill';
+        if (v.commit) delete slot.dataset.drag;
+        else slot.dataset.drag = 'sill';
         slot.dataset.tap = 'card';
       } else {
         delete slot.dataset.drag;
