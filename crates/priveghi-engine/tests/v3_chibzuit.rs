@@ -69,8 +69,7 @@ fn a_saved_wake_resumes_to_the_same_end() {
     for _ in 0..4 {
         policy.play_day(&mut w);
     }
-    let json = serde_json::to_string(&w).unwrap();
-    let mut back: Wake = serde_json::from_str(&json).unwrap();
+    let mut back = Wake::from_save(&w.to_save()).unwrap();
     assert_eq!(back, w);
     policy.play(&mut back);
     assert_eq!(summary(&back, "chibzuit"), FIXTURE);

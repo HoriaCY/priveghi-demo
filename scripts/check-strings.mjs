@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Every Romanian string lives in src/strings.ts, marked [RO-draft], and comes from the demo addendum
-// v3's §4 list (plus RULINGS R62's three), which is closed. Fails if src/strings.ts holds anything else, or if Romanian letters appear
+// v3's §4 list (plus RULINGS R62's three and R145's line), which is closed. Fails if src/strings.ts holds anything else, or if Romanian letters appear
 // anywhere else the player could see them (src/, index.html, public/*.html, the engine).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -9,7 +9,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DAYS = ['întâi', 'a doua', 'a treia', 'a patra', 'a cincea', 'a șasea', 'a șaptea', 'a opta', 'a noua'].map((d) => `Ziua ${d}`);
 // The demo addendum v3 §4 list (it replaced the brief's §9), plus the three kept by RULINGS R62:
-// the day ordinals, Sat (a name since DECISIONS 2026-10-12), Dezlegare (the fifth ending, chapter §15).
+// the day ordinals, Sat (a name since DECISIONS 2026-10-12), Dezlegare (the fifth ending, chapter §15);
+// and R145's line for a save kept aside (Horia 2026-10-18: a save gets a version).
 const ALLOWED = new Set([
   'Priveghi', 'Cel Nenuntit', 'Te-au adus acasă.', 'Semn', 'Nume', 'pomană de vis',
   'Dorul mamei', 'Dorul drăguței', 'Dorul fratelui', 'Dorul dușmanului', 'Dorul preotului',
@@ -22,6 +23,7 @@ const ALLOWED = new Set([
   'Bocănit', 'Vis', 'Umbră', 'Sari peste', 'Pisica.', 'Slab', 'Bun', 'Minunat', 'Soroc',
   'Nimeni n-a făcut colivă.', 'S-a stins lumânarea.', 'Azi nu a aprins nimeni lumânarea.',
   'Nuntă', 'Rătăcire', 'Țăruș', 'Dezlegare', 'Vânătorul.', 'Preotul a venit cu apă sfințită.',
+  'Priveghiul acela e din altă vreme.',
   ...DAYS,
 ]);
 const TYPE_TEST = '„Osândă, șchiopătând prin țară: Ăă Ââ Îî Șș Țț”';

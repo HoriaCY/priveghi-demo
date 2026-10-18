@@ -2,7 +2,8 @@
 // (charter section 9); the engine decides what they produce. The greedy considered hand asks the
 // engine for every match (`matches`, which says -1 for a thing that rests) and never reads a rule of
 // its own; it acts by night, two knocks a night, so the house stays under the priest's threshold (R90).
-import type { Action, Card, Wake } from './engine';
+// Every move is the solo hand's (SOLO, R142).
+import { SOLO, type Action, type Card, type Wake } from './engine';
 
 export const FIXTURES = ['start', 'night', 'wake', 'dark', 'door', 'preot', 'tarus', 'uitare', 'played', 'soroc', 'ninth'] as const;
 export type Fixture = (typeof FIXTURES)[number];
@@ -14,7 +15,7 @@ const NINTH_SHORT_FROM = 9;
 
 export function applyFixture(wake: Wake, name: Fixture, now: number): void {
   const act = (a: Action, when = now) => {
-    const r = wake.apply(a, when);
+    const r = wake.apply(a, when, SOLO);
     if (!r.ok) throw new Error(`fixture ${name}: ${a.type} refused (${r.refusal})`);
   };
   const awake = () => wake.state().phase === 'wake';
@@ -104,7 +105,7 @@ function greedy(wake: Wake, now: number, act: (a: Action, when?: number) => void
     let best: { on: number; m: number } | null = null;
     for (const t of v.cards) {
       if (t.kind !== 'lucru' || t.at !== 'kit') continue;
-      const m = wake.matches(dor, t.id, now);
+      const m = wake.matches(dor, t.id, now, SOLO);
       if (m >= 0 && (!best || m > best.m)) best = { on: t.id, m };
     }
     if (!best) continue;
@@ -126,7 +127,7 @@ function apparition(wake: Wake, now: number, act: (a: Action) => void, grade: 'b
   let best: { on: number; m: number } | null = null;
   for (const t of v.cards) {
     if (!((t.kind === 'om' && t.at === 'cloth') || (t.kind === 'loc' && t.at === 'road'))) continue;
-    const m = wake.matches(dor.id, t.id, now);
+    const m = wake.matches(dor.id, t.id, now, SOLO);
     if (m >= 0 && (!best || m > best.m)) best = { on: t.id, m };
   }
   if (!best) return;

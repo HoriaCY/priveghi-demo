@@ -1,9 +1,10 @@
 // Every Romanian string the demo may show, and nothing else Romanian: the list is the demo addendum
 // v3's §4 (which replaced the brief's §9), closed, plus three kept by ruling (RULINGS R62: the day
-// ordinals, Sat, Dezlegare). All are [RO-draft] for the director's review. Names take no definite
-// article; a line that carries the article is marked [register: ceremony] (DECISIONS 2026-10-12);
-// a genitive head keeps its article because the grammar requires it (Dorul mamei). Verb labels are
-// second-person imperatives, shown in capitals on the niches (DECISIONS 2026-10-13).
+// ordinals, Sat, Dezlegare) and the line of a save kept aside (R145). All are [RO-draft] for the
+// director's review. Names take no definite article; a line that carries the article is marked
+// [register: ceremony] (DECISIONS 2026-10-12); a genitive head keeps its article because the grammar
+// requires it (Dorul mamei). Verb labels are second-person imperatives, shown in capitals on the
+// niches (DECISIONS 2026-10-13).
 // scripts/check-strings.mjs fails the build if a Romanian string appears anywhere else in src/.
 
 import type { Ending, Fel, Grade, Loc, Lucru, Om, Verb } from './engine';
@@ -132,6 +133,8 @@ export const LINES = {
   darkDawn: d('Azi nu a aprins nimeni lumânarea.', 'Today nobody lit the candle.'),
   hunter: d('Vânătorul.', 'The Hunter.', { register: '[register: ceremony]', note: 'a sentence pronounced: the one who comes for you, named' }),
   priest: d('Preotul a venit cu apă sfințită.', 'The priest came with holy water.', { register: '[register: ceremony]', note: 'the rite begins: the subject of a sentence' }),
+  /** Said once, after the boot's line, when the save on this device could not be read and was kept aside (R145). */
+  keptAside: d('Priveghiul acela e din altă vreme.', 'That wake is from another time: a save this build cannot read, kept aside; a new wake begins.', { note: 'the demonstrative after the noun requires the article: grammar, not a title' }),
 };
 
 /** The five endings, as the page titles them; the Uitare ending says nothing. */
