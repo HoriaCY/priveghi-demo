@@ -371,12 +371,19 @@ test('a tap on an ended page begins another wake', async ({ page }) => {
   const { errors } = await open(page, 'fixture=tarus&still');
   await expect(body(page)).toHaveAttribute('data-ending', 'tarus');
   await page.locator('.page').click();
-  await expect(body(page)).toHaveAttribute('data-phase', 'wake');
+  // another wake lands in the dark (R118 amended by step 5): the boot waits for a touch
+  await expect(body(page)).toHaveAttribute('data-phase', 'boot');
+  await expect(page.locator('#stage')).toHaveClass(/dark0/);
   await expect(body(page)).toHaveAttribute('data-day', '1');
   await expect(body(page)).toHaveAttribute('data-uitare', '0');
   await expect(body(page)).toHaveAttribute('data-spaima', '0');
   await expect(body(page)).toHaveAttribute('data-ending', '');
   await expect(page.locator('.page .end')).toHaveCount(0);
+  // two touches: the match, then they bring you home; the new dead's first table
+  await page.mouse.click(640, 360);
+  await expect(page.locator('#stage')).not.toHaveClass(/dark0/);
+  await page.mouse.click(640, 360);
+  await expect(body(page)).toHaveAttribute('data-phase', 'wake');
   await expect(page.locator('.daytag')).toHaveText('Ziua întâi');
   await expect(page.locator('.stack[data-kind="dor"]')).toHaveCount(3);
   await expect(page.locator('.verb.locked')).toHaveCount(0);

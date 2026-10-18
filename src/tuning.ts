@@ -17,6 +17,9 @@ export const TUNING = {
   settle_ms: 360, // a moved card rests one pixel short this long, then takes the last pixel (brief §8)
   dusk_fade_ms: 800, // the table darkens at dusk over this long (RULINGS R67)
   gone_ms: 900, // a guttered Dor fades this long before the stacks re-flow (step 3)
+  boot_wait_ms: 1200, // after the match, they bring you home on the next touch or when this has passed (step 5)
+  fade_s: 6, // the Uitare ending: the table fades to Alb de Var over this long (chapter section 10)
+  stake_ms: 600, // the stake's shadow falls over this long, then nothing moves
   // the plays (charter section 7, RULINGS R70)
   knock_tol_ms: 140, // mean error under this: Minunat
   knock_good_ms: 280, // under this: Bun; above: Slab

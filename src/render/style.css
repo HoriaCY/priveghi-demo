@@ -55,7 +55,6 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
    one tap target, reaching 44 CSS px on the phone through its hit area */
 .stage .soroace { position: absolute; cursor: pointer; filter: brightness(.45); }
 .stage .soroace .soroc { position: absolute; top: 0; }
-.stage .soroace::after { content: ''; position: absolute; inset: -14px -16px; }
 
 /* the far side: another seat, dark, opened toward you (inverse perspective) */
 .stage .farside {
@@ -198,11 +197,35 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .toast .band, .page .band { display: inline-block; width: 72px; height: 10px; }
 .toast .n, .page .n { font: 18px var(--label); letter-spacing: .1em; }
 
-/* step 5: the boot's darkness over everything but the troita's small pool */
+/* step 5: the boot. The dark frame (dark0) until the first touch strikes the match; then the troita's small pool;
+   the second touch brings you home: the night layer fades over 1.8 s and the candle, lit at your head on the plank,
+   settles into its place by the cloth's edge. Zero text until then. */
 .night { position: absolute; inset: 0; pointer-events: none; z-index: 25; opacity: 0; transition: opacity 1.8s ease; }
 .booting .night { opacity: 1; transition: none; }
-.booting .cards > :not(.tied), .booting .flame-hit, .booting .daytag { pointer-events: none; }
-.booting .daytag, .booting .vname, .booting .forecast, #stage.booting ~ .page { visibility: hidden !important; }
+.booting:not(.dark0) .night { --hole: 110px; }
+.dark0 .night { background: rgba(17, 14, 11, .985) !important; }
+.dark0 .verb[data-niche="odihneste"] .flame { visibility: hidden; }
+.booting .cards > *, .booting .flame-hit, .booting .daytag, .booting .tally, .booting .soroace, .booting .verb, .booting .darkdoor { pointer-events: none; }
+.booting .daytag, .booting .vname, .booting .forecast, .booting .candle-label, .booting .putere, #stage.booting ~ .page { visibility: hidden !important; }
+.maincandle { transition: opacity 1.8s ease, transform 1.8s cubic-bezier(.2, 0, 0, 1); }
+.booting .maincandle { opacity: 0; transform: translate(var(--boot-dx, -900px), var(--boot-dy, -20px)) scale(.6); transition: none; }
+
+/* the endings on the table (chapter section 10): the Bride dims every gold but the troita's; Uitare fades the table to
+   Alb de Var over TUNING.fade_s (set on the stage); the stake's shadow falls across the sheet over TUNING.stake_ms */
+.bride .cards > *, .bride .verb:not([data-niche="odihneste"]), .bride .maincandle, .bride .stilllife, .bride .farcandle, .bride .tally, .bride .soroace {
+  filter: saturate(.45) brightness(.7) !important; transition: filter 2.4s ease;
+}
+.stage.fade { animation: fade var(--fade-s, 6s) ease-in forwards; }
+@keyframes fade { to { filter: saturate(0) brightness(1.9); } }
+.stage.stake::after {
+  content: ''; position: absolute; left: 118px; top: 336px; width: 26px; height: 290px; background: rgba(23, 19, 16, .85);
+  transform: rotate(-18deg); z-index: 26; pointer-events: none; animation: stakein var(--stake-ms, 600ms) ease-out forwards;
+}
+@keyframes stakein { from { opacity: 0; } to { opacity: 1; } }
+/* a thumb must find the dishes and the tied cards on the phone (R44, R137): the dishes reach 34 up and 30 down (the
+   viewport's top edge is near); the tied slots' areas touch, 38 CSS px each */
+.stage .soroace::after { content: ''; position: absolute; inset: -34px -19px -30px; }
+.cards .tied::after { inset: -22px -20px; }
 
 /* the page: paper beside the table, below it, or over it on a phone */
 .page {
@@ -220,6 +243,8 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
 .page .tally-rows { display: flex; flex-direction: column; gap: 2px; }
 .page .tally-rows .row { display: flex; align-items: center; gap: 10px; }
 .page .tally-rows .row .nm { font: 600 17px/1.3 var(--display); min-width: 120px; }
+.page.below .tally-rows { flex-direction: row; flex-wrap: wrap; column-gap: 24px; row-gap: 2px; }
+.page.below .tally-rows .row { width: calc(50% - 12px); }
 .page.below .tally-rows .row .nm { min-width: 110px; }
 .page .focus .nm { font: 600 24px/1.2 var(--display); }
 .page .sub { font: 18px var(--label); font-variant: small-caps; letter-spacing: .06em; color: var(--ink-dim); }
@@ -272,6 +297,8 @@ body { font: 17px/1.5 var(--body); -webkit-text-size-adjust: 100%; }
   .stack { transition-duration: .09s; }
   .toast { transition-duration: .09s; }
   .night, .maincandle { transition-duration: .2s; }
+  .bride .cards > * { transition-duration: .2s; }
+  .stage.fade { animation-duration: .4s; }
   .stage .dusk, .stage .pool { transition-duration: .2s !important; }
 }
 
