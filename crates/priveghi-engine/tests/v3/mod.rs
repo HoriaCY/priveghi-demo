@@ -330,11 +330,11 @@ impl Chibzuit {
                 let mama = om_id(w, Om::Mama);
                 w.apply(Action::Asculta { om: mama }, now).unwrap();
             }
-            if w.state.putere >= cfg.cost_umbla {
+            if w.state.putere >= cfg.cost_bantuie {
                 for loc in [Loc::Tinda, Loc::Curte] {
                     if !w.state.walked.contains(&loc) && d >= 4 {
                         let id = loc_id(w, loc);
-                        w.apply(Action::Umbla { loc: id }, now).unwrap();
+                        w.apply(Action::Bantuie { loc: id }, now).unwrap();
                         break;
                     }
                 }
@@ -350,12 +350,12 @@ impl Chibzuit {
         }
         let now = if w.state.night { now } else { dusk(w) };
         self.untie(w, now);
-        if d >= cfg.burial_day && w.state.putere >= cfg.cost_umbla + cfg.cost_sopteste {
+        if d >= cfg.burial_day && w.state.putere >= cfg.cost_bantuie + cfg.cost_sopteste {
             let want: Vec<Om> = self.hand.iter().map(|d| dor(w, *d).1).collect();
             for (loc, who) in [(Loc::Sat, Om::Dusman), (Loc::Biserica, Om::Preot)] {
                 if want.contains(&who) && (who != Om::Preot || !w.state.biserica_known) {
                     let id = loc_id(w, loc);
-                    w.apply(Action::Umbla { loc: id }, now).unwrap();
+                    w.apply(Action::Bantuie { loc: id }, now).unwrap();
                     break;
                 }
             }

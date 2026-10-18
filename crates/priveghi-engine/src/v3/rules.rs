@@ -1,8 +1,9 @@
 //! The dead's wake, one pure step per action. Inside a day a hand commits acts and resolves their
-//! plays, walks, listens and ties; everything else resolves at the close, in the chapter's published
-//! order (§3), which is the simulator's `close()` verbatim: the open play as a skip -> Dor rot ->
+//! plays, goes about, listens and ties; everything else resolves at the close, in the chapter's published
+//! order (§3), which is the simulator's `close()` verbatim: the open play as a skip -> Dor rot -> the
+//! Bride on the last day ->
 //! the sill's tick -> the soroc -> the burial -> the dark-dawn pip -> the pomane expire -> the Uitare
-//! check -> the Hunter -> the priest -> Spaima decay -> the wedding -> the candle for tomorrow ->
+//! check -> the Hunter -> the priest -> Spaima decay -> Ratacire on the last day -> the candle for tomorrow ->
 //! Putere -> arrivals, last, so the lifetime rule exempts them at this close.
 
 use super::config::Config;
@@ -19,6 +20,7 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         precued: false,
         closing: false,
     };
+    let acc_start = config.acc_start_m;
     let mut s = State {
         config,
         phase: Phase::Boot,
@@ -33,7 +35,7 @@ pub fn new_state(config: Config, now_ms: u64) -> State {
         candle: true,
         under: 0,
         standing_m: [0; 5],
-        acc_m: [0; 5],
+        acc_m: [acc_start; 5],
         last_sent: [0; 5],
         afterglow: Vec::new(),
         amintiri: Default::default(),
@@ -81,15 +83,18 @@ pub fn step(state: &State, action: Action, now_ms: u64) -> Result<State, Refusal
         },
         Phase::Door => match action {
             Action::Treci => treci(&mut s),
+            Action::Ramai => ramai(&mut s),
+            Action::Again => return Ok(again(&s, now_ms)),
             Action::Tick | Action::Pause | Action::Resume => false,
             _ => return Err(Refusal::NotNow),
         },
         Phase::Ended => match action {
+            Action::Again => return Ok(again(&s, now_ms)),
             Action::Tick | Action::Pause | Action::Resume => false,
             _ => return Err(Refusal::NotNow),
         },
         Phase::Wake => match action {
-            Action::Begin | Action::Treci => return Err(Refusal::NotNow),
+            Action::Begin | Action::Treci | Action::Ramai | Action::Again => return Err(Refusal::NotNow),
             Action::Tick => tick(&mut s, now_ms),
             Action::CloseDay => {
                 close_day(&mut s, now_ms, true);
@@ -99,7 +104,7 @@ pub fn step(state: &State, action: Action, now_ms: u64) -> Result<State, Refusal
             Action::Resume => resume(&mut s, now_ms),
             Action::Place { dor, on } => place(&mut s, dor, on)?,
             Action::Resolve { dor, grade } => resolve(&mut s, dor, grade)?,
-            Action::Umbla { loc } => umbla(&mut s, loc)?,
+            Action::Bantuie { loc } => bantuie(&mut s, loc)?,
             Action::Asculta { om } => asculta(&mut s, om)?,
             Action::Tie { dor } => tie(&mut s, dor)?,
             Action::Untie { dor } => untie(&mut s, dor)?,
@@ -138,6 +143,20 @@ fn treci(s: &mut State) -> bool {
     log(s, Event::Treci);
     end(s, Ending::Nunta);
     true
+}
+
+/// She stood in the door and you would not go: you remain (chapter §10).
+fn ramai(s: &mut State) -> bool {
+    log(s, Event::Ramai);
+    end(s, Ending::Ratacire);
+    true
+}
+
+/// Another wake from the dark: a new dead, the same house. Nothing of this wake carries over in M0.
+fn again(s: &State, now: u64) -> State {
+    let mut next = new_state(s.config.clone(), now);
+    next.rev = s.rev + 1;
+    next
 }
 
 // ---------------------------------------------------------------- the clock
@@ -328,7 +347,7 @@ fn cost_of(cfg: &Config, verb: Verb) -> u8 {
         Verb::Urneste => cfg.cost_urneste,
         Verb::Sopteste => cfg.cost_sopteste,
         Verb::Arata => cfg.cost_arata,
-        Verb::Umbla => cfg.cost_umbla,
+        Verb::Bantuie => cfg.cost_bantuie,
         Verb::Asculta => cfg.cost_asculta,
         Verb::Odihneste => 0,
     }
@@ -487,8 +506,8 @@ fn pomenire(s: &mut State, n: u8, src: Option<Om>) {
     log(s, Event::Pomenire { n, uitare });
 }
 
-/// UMBLA: a place on the road row; you are there at once (chapter §9).
-fn umbla(s: &mut State, loc_id: u32) -> Result<bool, Refusal> {
+/// BANTUIE: a place on the road row; you are there at once (chapter §9).
+fn bantuie(s: &mut State, loc_id: u32) -> Result<bool, Refusal> {
     awake(s)?;
     if s.commit.is_some() {
         return Err(Refusal::Busy);
@@ -501,7 +520,7 @@ fn umbla(s: &mut State, loc_id: u32) -> Result<bool, Refusal> {
     if loc.village() && !s.night {
         return Err(Refusal::OnlyAtNight);
     }
-    let cost = s.config.cost_umbla;
+    let cost = s.config.cost_bantuie;
     if s.putere < cost {
         return Err(Refusal::Tired);
     }
@@ -603,6 +622,13 @@ fn close_day(s: &mut State, now: u64, early: bool) {
     }
     let d = s.day;
     rot(s, d);
+    // on the last day the Bride stands before the house's last meal (chapter §10, ruled 2026-10-14)
+    if d >= cfg.zile && s.uitare <= cfg.nunta_uitare {
+        s.phase = Phase::Door;
+        s.ending = Some(Ending::Nunta);
+        log(s, Event::BrideStands);
+        return;
+    }
     if cfg.soroace.contains(&d) {
         if s.uitare < cfg.soroc_uitare_max || s.minune_promise {
             s.minune_promise = false;
@@ -663,13 +689,8 @@ fn close_day(s: &mut State, now: u64, early: bool) {
     }
     s.spaima = s.spaima.saturating_sub(cfg.spaima_decay);
     if d >= cfg.zile {
-        if s.uitare <= cfg.nunta_uitare {
-            s.phase = Phase::Door;
-            s.ending = Some(Ending::Nunta);
-            log(s, Event::BrideStands);
-        } else {
-            end(s, Ending::Ratacire);
-        }
+        // the door stayed dark at the check: you remain
+        end(s, Ending::Ratacire);
         return;
     }
     // the house stops lighting the candle at the threshold, and relights only after
@@ -882,7 +903,8 @@ fn cloth(s: &State) -> u32 {
     (stacks.len() + franturi(s) + sleepers(s).len()) as u32
 }
 
-/// Uitare at the next three dawns if nothing is done: the counter plus the loose Dor by stub (chapter §7).
+/// Uitare at the next three dawns if nothing is done: the counter plus the loose Dor by stub (chapter §3),
+/// never past `uitare_cap`: there is no dawn beyond the Uitare ending.
 pub fn forecast(s: &State) -> [u8; 3] {
     let mut f = [0u8; 3];
     let mut u = s.uitare;
@@ -893,7 +915,7 @@ pub fn forecast(s: &State) -> [u8; 3] {
             .filter(|c| c.at == Where::Cloth)
             .filter(|c| matches!(c.kind, Kind::Dor { left, .. } if usize::from(left) == k + 1))
             .count();
-        u = u.saturating_add(due as u8);
+        u = u.saturating_add(due as u8).min(s.config.uitare_cap);
         *slot = u;
     }
     f
