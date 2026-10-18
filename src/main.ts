@@ -1,6 +1,7 @@
 // The demo: the engine holds the dead's wake; the table and the page draw it; hands send actions;
 // the clock ticks; the wake is saved on this device only. Step 3: the drags that commit, the plays,
-// STINGE and rest by touch, the close's visible beats.
+// STINGE and rest by touch, the close's visible beats. Step 4: the dream's deps, her door (TRECI by
+// a drag, the refusal by a tap on the page), another wake after an ending, the dishes' strip.
 import './render/style.css';
 import { Wake } from './engine';
 import type { Action, Card, Commit, Entry, View } from './engine';
@@ -96,6 +97,7 @@ function sound(e: Entry): void {
     case 'soroc_held':
     case 'buried':
     case 'rested':
+    case 'treci':
       return SOUND.toaca();
     case 'untied':
       return SOUND.tick();
@@ -110,13 +112,20 @@ function sound(e: Entry): void {
   }
 }
 
+/** The last line the table spoke in the log's last close (what a reload, or a review fixture, lands on). */
+function lastLine(log: Entry[]): string | null {
+  const from = log.map((e) => e.event).lastIndexOf('day_closed');
+  return log.slice(Math.max(0, from)).map(line).filter((s): s is string => s !== null).pop() ?? null;
+}
+
 /** A line the table speaks at a beat, from src/strings.ts; most beats are wordless. */
 function line(e: Entry): string | null {
   switch (e.event) {
     case 'stinge':
       return LINES.candleOut.ro;
-    case 'dark_dawn':
-      return LINES.darkDawn.ro;
+    case 'candle':
+      // a day begun without a flame says so; the dark-dawn pip at its close is a loss, and losses are quiet
+      return e.lit ? null : LINES.darkDawn.ro;
     case 'soroc_missed':
       return LINES.noColiva.ro;
     case 'priest':
@@ -181,6 +190,9 @@ async function main(): Promise<void> {
   strip.setAttribute('role', 'status');
   stage.append(strip);
   if (params.has('annotate')) annotate(stage);
+  // the composition (beside, below, folded over the phone's right side) is known before the first draw reads it
+  const fit = () => fitStage(stage, pageEl, rotate);
+  fit();
 
   let stripTimer = 0;
   let stripFocus = '';
@@ -195,6 +207,7 @@ async function main(): Promise<void> {
     }, ms);
   };
   const text = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const phone = () => document.body.dataset.composition === 'phone';
   // a review fixture never touches the wake saved on this device
   const persist = !params.get('fixture');
   const save = () => {
@@ -259,6 +272,9 @@ async function main(): Promise<void> {
     }
     // the act just resolved: the Pomenire that follows it names the Amintire made and its owner
     let made: { strength: number; owner: string } | null = null;
+    /** The strip holds one thing per beat: a spoken line outranks the Pomenire strip of the same close. */
+    let named: { nm: string; sub: string } | null = null;
+    let spoken: string | null = null;
     const gone: number[] = [];
     for (const e of fresh) {
       sound(e);
@@ -273,15 +289,19 @@ async function main(): Promise<void> {
         const nm = made ? AMINTIRE[Math.max(0, Math.min(3, made.strength)) as 0 | 1 | 2 | 3].ro : POMENIRE.ro;
         const sub = made ? [made.owner, POMENIRE.ro].filter(Boolean).join(' · ') : '';
         made = null;
-        say(`<span class="nm">${text(nm)}</span>${sub ? `<span class="sub">${text(sub)}</span>` : ''}`);
-        page.say([nm, sub].filter(Boolean).join(' · '));
+        named = { nm, sub };
       }
-      const said = line(e);
-      if (said) {
-        page.say(said);
-        say(`<span>${text(said)}</span>`);
-      }
-      if (e.event === 'ended' || e.event === 'bride_stands') pageEl.classList.add('open');
+      spoken = line(e) ?? spoken;
+      // the ending's page opens everywhere; in her door the page opens on its own only where it lies beside the
+      // table: on the phone it would cover the door she stands in (the day tag opens it, and a tap on it refuses)
+      if (e.event === 'ended' || (e.event === 'bride_stands' && !phone())) pageEl.classList.add('open');
+    }
+    if (spoken) {
+      page.say(spoken);
+      say(`<span>${text(spoken)}</span>`);
+    } else if (named) {
+      say(`<span class="nm">${text(named.nm)}</span>${named.sub ? `<span class="sub">${text(named.sub)}</span>` : ''}`);
+      page.say([named.nm, named.sub].filter(Boolean).join(' · '));
     }
     // a guttered Dor fades where it lay before the stacks re-flow (losses are quiet)
     window.clearTimeout(reflow);
@@ -297,7 +317,7 @@ async function main(): Promise<void> {
     }
     select();
     page.render(v);
-    if (fresh.some((e) => ['day_closed', 'ended', 'bride_stands'].includes(e.event))) save();
+    if (fresh.some((e) => ['brought_home', 'day_closed', 'ended', 'bride_stands'].includes(e.event))) save();
     if (v.phase !== 'wake') window.clearInterval(clock);
     const b = document.body.dataset;
     b.day = String(v.day);
@@ -320,8 +340,15 @@ async function main(): Promise<void> {
     const commit = view.commit;
     if (!commit || play) return;
     const dor = commit.dor;
+    const thread = cardOf(commit.dor);
+    const sleeper = cardOf(commit.on);
+    // the dream's hand: the Dor's kind and the sleeper's affinities are the right tiles (R70); read, never decided here
+    const vis = commit.verb === 'sopteste' && thread?.kind === 'dor' && sleeper?.kind === 'om' ? { fel: thread.fel, affinities: sleeper.fel } : undefined;
     play = openPlay(commit.verb, {
       stage,
+      day: view.day,
+      mastiZile: view.config.masti_zile,
+      vis,
       resolve: (grade) => {
         resolving = true;
         act({ type: 'resolve', dor, grade });
@@ -350,8 +377,23 @@ async function main(): Promise<void> {
     return { type: 'place', dor: id, on: t.card };
   };
 
+  /** Another wake, a new dead (R65): the engine lands in the dark, and until step 5 brings the boot they bring you home at once (R83). */
+  const again = () => {
+    play?.close();
+    play = null;
+    page.focus = null;
+    page.inHand = null;
+    page.say(null);
+    seen = 0;
+    pageEl.classList.remove('open');
+    act({ type: 'again' });
+    act({ type: 'begin' });
+    startClock();
+  };
+
   const focusOf = (el: HTMLElement): Focus => {
     if (el.dataset.tap === 'tally') return { tally: true };
+    if (el.dataset.tap === 'soroace') return { soroace: true };
     const ids = (el.dataset.ids ?? '').split(' ').filter(Boolean).map(Number);
     return ids.length ? { ids } : null;
   };
@@ -423,9 +465,17 @@ async function main(): Promise<void> {
   };
   stage.addEventListener('pointerdown', firstTouch, { capture: true });
   stage.addEventListener('keydown', firstTouch, { capture: true });
-  pageEl.addEventListener('pointerdown', () => {
+  pageEl.addEventListener('pointerdown', (e) => {
     unlockAudio();
-    if (document.body.dataset.composition === 'phone') pageEl.classList.remove('open');
+    // her door: a tap on the Bride herself on the page is the refusal (R132), and the wake ends in Ratacire (R65);
+    // the paper around her is not, so a stray tap on a page that lies open beside the table refuses nothing
+    if (view.phase === 'door') {
+      if ((e.target as Element).closest('.door .bride')) act({ type: 'ramai' });
+      return;
+    }
+    // after any ending a tap on the page begins another wake (R65)
+    if (view.phase === 'ended') return again();
+    if (phone()) pageEl.classList.remove('open');
   });
   // the clock runs only while someone is at the table; leaving saves the wake
   document.addEventListener('visibilitychange', () => {
@@ -434,13 +484,18 @@ async function main(): Promise<void> {
   });
 
   refresh();
+  // a load lands on what the table last said (a reload mid-wake, a review fixture): the last close's line, without its sound
+  const said = lastLine(view.log);
+  if (said) {
+    page.say(said);
+    page.render(view);
+    say(`<span>${text(said)}</span>`);
+  }
   startClock();
   // a wake loaded with its play open (a reload mid-knock): the paper comes back
   beginPlay();
-  if (view.phase === 'ended' || view.phase === 'door') pageEl.classList.add('open');
+  if (view.phase === 'ended' || (view.phase === 'door' && !phone())) pageEl.classList.add('open');
 
-  const fit = () => fitStage(stage, pageEl, rotate);
-  fit();
   window.addEventListener('resize', fit);
   window.visualViewport?.addEventListener('resize', fit);
 }

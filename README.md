@@ -21,10 +21,11 @@ and the days, so every wake deals the same first table and differs only by what 
 
 ## How it plays (the game itself has no instructions)
 
-What the branch does today, step 3 of the turnover: the table is drawn from the engine, the clock
-runs, cards answer a tap and a drag, the knock is played, the skip takes the blame, and the dead can
-blow the candle out and rest. The dream play, the priest's cords and Spaimă's tells, the boot in the
-dark and the endings' pages come with steps 4–5.
+What the branch does today, step 4 of the turnover: the table is drawn from the engine, the clock
+runs, cards answer a tap and a drag, the knock and the dream are played, the skip takes the blame,
+the dead can blow the candle out and rest, the priest comes and the village tells its fright, the
+memorial meals are set, the body is buried, and the wake ends on one of five pages. The boot in the
+dark comes with step 5.
 
 - A day is 60 seconds. The candle at the cloth's head burns down in real time; at the fortieth
   second dusk falls, the table darkens and the living at the table fall asleep; the day closes at
@@ -44,8 +45,35 @@ dark and the endings' pages come with steps 4–5.
   it, Bun; off it, the cat takes the blame as if you had skipped. The mother's longing in the
   mother's kerchief on the beat is a Minune: a Semn stays on the cloth. `Sari peste` skips the play:
   the cat crosses the kit row, lunges where the cup lies and knocks it over, or a draft bends the
-  flame under a cupped hand, and the act resolves at Bun. ȘOPTEȘTE and ARATĂ-TE have no play yet:
-  they resolve as the skip at once, with the same transitions.
+  flame under a cupped hand, or a masked player of the wake games rises from the far side, bows and
+  sinks; and the act resolves at Bun. On the vigil nights (days 1–2) the mask answers every other
+  skip; from the third day the three take turns, never the same twice.
+- **The dream** (ȘOPTEȘTE): by night, a Dor dragged onto one of the living asleep at the table opens
+  `Vis`: six small Dor faces, the five kinds and the Dor's kind again; pick three. The right ones are
+  the Dor's kind and the sleeper's own kinds: three right, Minunat, and the sleeper wakes and leaves
+  a *pomană de vis* in the kit row at dawn; two, Bun; fewer, the skip's transition. The same sleeper
+  two nights running wakes troubled (the engine caps the match). ARATĂ-TE has no play: a Dor on a
+  person by day or on a place resolves as the skip at once, with a transition, at Bun.
+- **The priest**: when the village's fright reaches six at a close he comes with holy water
+  (`Preotul a venit cu apă sfințită.`): hemp cords lie across URNEȘTE and ARATĂ-TE for three days
+  and a drop on them is refused; ȘOPTEȘTE still works. His third service in one wake ends it:
+  Dezlegare. Before he comes the village tells its fright without a numeral: the dog tied at the
+  gate on Curte from 3, garlic strung on ARATĂ-TE's lintel from 4, garlic on Casă's window from 5,
+  the Hunter's horse at Sat from 7; at 9 the Hunter (`Vânătorul.`): Țăruș, the stake's page.
+- **The soroace and the burial**: two small dishes on the far side of the table, one per memorial
+  day (the third and the ninth): empty while the day waits, colivă with a cross when the house held
+  the meal (toaca), dark when it did not (`Nimeni n-a făcut colivă.`, and Uitare +3). Tap them for
+  their days. At the third close the body is buried: your card on the plank becomes the cross,
+  with the same Uitare grammar, and the village places stand on the road from then on (haunting
+  them is a night act). A day the house did not light the candle begins dark (`Azi nu a aprins
+  nimeni lumânarea.`): the candle out, the table dusk-dark, the living asleep all day.
+- **Her door and the endings**: at the ninth close, if Uitare is three or less, the Bride stands in
+  the dark door, her wreath the one blue, and TRECI is written under it; drag your card onto the
+  door: Nuntă, and the card goes through it with her. Tap the page while she stands: you would not
+  go, Rătăcire. With more Uitare the door
+  stays dark, the ninth meal is held or missed, and the page shows it and Rătăcire. Uitare at 9 on
+  any day: the page shows only the day. Spaimă at 9: Țăruș. After any ending a tap on the page
+  begins another wake, a new dead at the same table.
 - **BÂNTUIE**: drag a place into its niche; you are there at once, and what the place holds comes
   to the kit row (the porch gives the knife and the flute). **ASCULTĂ**: drag a person into its
   niche for a fragment of what they say of you (two at most). **The sill**: drag a Dor onto the
@@ -71,7 +99,8 @@ The numbers match [docs/shots/v3-step-2/annotated-1280x720.png](docs/shots/v3-st
 (`?fixture=wake&annotate`: the fifth day of a considered hand, which knocks by night so the priest
 stays away; `?fixture=preot` is the one inside his service).
 
-1. **The far seat**: the other side of the table, face-down backs and an unlit candle.
+1. **The far seat**: the other side of the table, face-down backs and an unlit candle; at its
+   left, the two soroc dishes (step 4), the living's memorial meals for the third and the ninth day.
 2. **ODIHNEȘTE-TE**, the troiță niche, the only roofed one: an icon on gold, a flame that never
    goes out, and on its ledge the sill where three Dor can be tied to slow their guttering. A tap
    on it rests the dead and brings the dawn; a Dor dropped on it is tied.
@@ -136,9 +165,11 @@ npm run check                    # Romanian strings, the palette law, the privac
 ```
 
 Every push to `main` runs all of it in GitHub Actions and deploys `dist/` to Pages.
-Review views: `?fixture=start|night|wake|dark|door|preot|tarus|uitare|played` (a fixture is a list of
-actions the engine plays; it never touches the saved wake), `?still` (the clock stops), `?annotate`,
-`?typetest`, `?sheet` (every card face), `?icon`.
+Review views: `?fixture=start|night|wake|dark|door|preot|tarus|uitare|played|soroc|ninth` (a fixture is
+a list of actions the engine plays; it never touches the saved wake: `soroc` is the considered hand
+through the burial's close with the third meal held, `ninth` the same hand one knock short on the
+last night, so the ninth door stays dark), `?still` (the clock stops), `?annotate`, `?typetest`,
+`?sheet` (every card face), `?icon`.
 
 ## Turning over to the dead's wake
 
@@ -173,8 +204,16 @@ step at a time, each on its own branch; the site above plays what `main` holds.
   the log: the guttered Dor's fade, the Pomenire strip, the seal and the tally's mark, the dusk kept
   on a dark dawn; the dusk over the cards again at night. The `played` fixture. Rulings R96–R114. Not yet: Vis, the priest's cords and
   Spaimă's tells, TRECI in her door, the boot in the dark, the endings' pages beyond their title.
-- Steps 4–6: the dream and the priest with Spaimă's tells, the mask; the page and the boot; polish
-  and the watcher's leaving.
+- **Step 4 (done):** the dream and the vigil nights' mask; the priest's cords and Spaimă's tells (the
+  dog, the garlic on the house and on ARATĂ-TE's lintel, the horse; renderer thresholds in
+  `src/tuning.ts`, unsimulated); the soroc dishes on the far side with their strip and the page's row;
+  the burial's cross; the dark dawn's line at the day's start; her door: TRECI by dragging your card
+  onto the door (the door labelled and answering by contour weight), the refusal by a tap on the
+  Bride's page, the five endings' pages with the last meal and the last line before the title, and
+  another wake by a tap on an ended page (begun at once until step 5's boot); your card gone
+  through the door at Nuntă. The `soroc` and `ninth` fixtures. Rulings R115–R132. Not yet: the boot
+  in the dark, the Uitare ending's fade.
+- Steps 5–6: the page and the boot; polish and the watcher's leaving.
 
 ## Design
 

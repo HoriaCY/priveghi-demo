@@ -4,10 +4,13 @@
 // its own; it acts by night, two knocks a night, so the house stays under the priest's threshold (R90).
 import type { Action, Card, Wake } from './engine';
 
-export const FIXTURES = ['start', 'night', 'wake', 'dark', 'door', 'preot', 'tarus', 'uitare', 'played'] as const;
+export const FIXTURES = ['start', 'night', 'wake', 'dark', 'door', 'preot', 'tarus', 'uitare', 'played', 'soroc', 'ninth'] as const;
 export type Fixture = (typeof FIXTURES)[number];
 
 export const isFixture = (name: string | null): name is Fixture => FIXTURES.includes(name as Fixture);
+
+/** From this day the `ninth` hand knocks once a night, not twice: the ninth close then lands between the Bride's 3 and the missed meal's 6. */
+const NINTH_SHORT_FROM = 9;
 
 export function applyFixture(wake: Wake, name: Fixture, now: number): void {
   const act = (a: Action, when = now) => {
@@ -44,15 +47,24 @@ export function applyFixture(wake: Wake, name: Fixture, now: number): void {
     case 'uitare':
       for (let i = 0; i < 40 && awake(); i++) close();
       return;
-    case 'wake': {
-      // four considered days: Tinda haunted on the first, each Dor to its best thing, rest at dusk
+    case 'wake':
+    case 'soroc': {
+      // the considered hand: Tinda haunted on the first day, each Dor to its best thing, rest at dusk;
+      // four days (the fifth open: the cross, a resting thing, Amintiri on the tally), or three (the
+      // burial and the memorial held: the dish for the third day)
       const tinda = wake.state().cards.find((c) => c.kind === 'loc' && c.loc === 'tinda' && c.at === 'road');
       if (tinda) act({ type: 'bantuie', loc: tinda.id });
-      for (let d = 0; d < 4 && awake(); d++) night(wake, now, act);
+      for (let d = 0; d < (name === 'wake' ? 4 : 3) && awake(); d++) night(wake, now, act);
       return;
     }
     case 'door':
       for (let d = 0; d < 9 && awake(); d++) night(wake, now, act);
+      return;
+    case 'ninth':
+      // the considered hand one knock short on the last night: the Dor it leaves gutter at the ninth close,
+      // Uitare stands above the Bride's 3 and under the missed meal's 6, the door stays dark, the held
+      // soroc precedes Ratacire's page
+      for (let d = 0; d < 9 && awake(); d++) night(wake, now, act, 3, wake.state().day >= NINTH_SHORT_FROM ? 1 : 2);
       return;
     case 'preot':
     case 'tarus': {
@@ -70,11 +82,11 @@ export function applyFixture(wake: Wake, name: Fixture, now: number): void {
  * `rest_at` or above) is rested, which calms it and costs the night (a night act would cord the troita);
  * otherwise two knocks, then the close. The threshold is the hand's own, not a rule.
  */
-function night(wake: Wake, now: number, act: (a: Action, when?: number) => void, rest_at = 3): void {
+function night(wake: Wake, now: number, act: (a: Action, when?: number) => void, rest_at = 3, knocks = 2): void {
   const dusk = wake.state().clock.dusk_at;
   if (!wake.state().night) act({ type: 'tick' }, dusk);
   if (wake.state().spaima >= rest_at) act({ type: 'rest' });
-  else greedy(wake, now, act);
+  else greedy(wake, now, act, knocks);
   act({ type: 'close_day' });
 }
 
