@@ -1,0 +1,7 @@
+# The Rust the rules are built and tested with, here and in CI (.github/workflows/pages.yml installs
+# the same version, target and component). RULINGS R146.
+[toolchain]
+channel = "1.92.0"
+targets = ["wasm32-unknown-unknown"]
+components = ["rustfmt"]
+profile = "minimal"

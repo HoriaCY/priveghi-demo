@@ -117,6 +117,20 @@ which every face must render with Ș and Ț carrying a comma (never a cedilla) a
 
 > „Osândă, șchiopătând prin țară: Ăă Ââ Îî Șș Țț”
 
+## Saves
+
+The wake is saved in this browser's localStorage (`priveghi.v3`) at the boot, every close, every
+ending, when the tab is hidden, and at another wake. A save carries a version (1) and a journal:
+every move played since this wake began (its seat, its time, its action), from a full copy of the
+state it began in, so the wake replays exactly (the replay a phone's bug report needs; one day a
+server's input). A save from before the version (`{"state": …}`) goes on where it was, its journal
+beginning at that load. A save this build cannot read (a newer build's, or a damaged one) is never
+thrown away: it is kept aside under `priveghi.v3.refused` (one slot, the latest), a new wake begins
+in the dark, and after „Te-au adus acasă." the strip says, once, „Priveghiul acela e din altă
+vreme." (in the sitting that found it: a tab closed in the dark before the boot loses the line,
+never the save). `?reset` wipes both keys; a review fixture reads and writes neither. The format and the policy are in
+[docs/ENGINE_API.md](docs/ENGINE_API.md).
+
 ## Privacy
 
 Static files only, on GitHub Pages: no server, no accounts, no analytics, no cookies, and no
@@ -133,10 +147,14 @@ only a sit on a phone can answer. Every expected state in it was checked against
 
 ## Build and test
 
-Needs Rust (stable) with the `wasm32-unknown-unknown` target, `wasm-pack`, and Node 24.
+Needs Rust 1.92.0 with the `wasm32-unknown-unknown` target (pinned in `rust-toolchain.toml`: rustup
+fetches both on the first `cargo` run), `wasm-pack`, and Node 24. The engine's contract (the entry
+points, the move and its seat, the actions, the refusals, the View, the save) is
+[docs/ENGINE_API.md](docs/ENGINE_API.md); changes to it are rulings.
 
 ```sh
-cargo test                       # every rule of the wake; the reference run byte for byte
+cargo test                       # every rule of the wake; the reference run byte for byte; the save and its replay
+cargo build -p priveghi-engine --target wasm32-unknown-unknown --release   # the rules for the browser, outside Vite
 npm install
 npm run build                    # wasm-pack + type-check + vite build into dist/
 npx playwright test              # the browser checks, against the built site

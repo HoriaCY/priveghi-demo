@@ -1,11 +1,12 @@
 //! Browser bindings for the dead's wake (the renderer turned over at step 2, RULINGS R60). The state
 //! crosses the boundary as JSON (brief §4): the renderer sends an action, reads the state back, and
 //! draws it. Nothing on the JavaScript side decides a rule; the projections only the rules can make
-//! (the forecast, a match in points) are asked of the engine.
+//! (the forecast, a match in points) are asked of the engine. Every move names its seat here, at the
+//! boundary, where a seat will one day come from (a hand, a network message): docs/ENGINE_API.md.
 
 use wasm_bindgen::prelude::*;
 
-use crate::v3::{forecast, match_points, Action, Kind, Wake};
+use crate::v3::{forecast, match_points, Action, Kind, Move, Wake};
 
 #[wasm_bindgen]
 pub struct Engine {
@@ -20,14 +21,13 @@ impl Engine {
         Engine { wake: Wake::new(now_ms as u64) }
     }
 
-    /// Loads what `save()` wrote.
+    /// Loads what `save()` wrote, or a save from before the version. Throws `newer` or `unreadable`.
     pub fn load(save: &str) -> Result<Engine, JsError> {
-        let wake: Wake = serde_json::from_str(save).map_err(|e| JsError::new(&e.to_string()))?;
-        Ok(Engine { wake })
+        Wake::from_save(save).map(|wake| Engine { wake }).map_err(|e| JsError::new(&e.to_string()))
     }
 
     pub fn save(&self) -> String {
-        serde_json::to_string(&self.wake).expect("a wake serialises")
+        self.wake.to_save()
     }
 
     /// The state, with the forecast beside it: Uitare at the next three dawns if nothing is done.
@@ -37,22 +37,22 @@ impl Engine {
         v.to_string()
     }
 
-    /// What `apply` would answer for this action, without applying it.
-    pub fn probe(&self, action: &str, now_ms: f64) -> Result<String, JsError> {
-        let action: Action = serde_json::from_str(action).map_err(|e| JsError::new(&e.to_string()))?;
-        Ok(answer(self.wake.probe(action, now_ms as u64)))
+    /// What `apply` would answer for this action from this seat, without applying it.
+    pub fn probe(&self, action: &str, now_ms: f64, seat: u8) -> Result<String, JsError> {
+        let mv = move_of(action, now_ms, seat)?;
+        Ok(answer(self.wake.ask(&mv)))
     }
 
-    /// Applies an action given as JSON. Answers `{"ok":true,"changed":…}` or `{"ok":false,"refusal":…}`.
-    pub fn apply(&mut self, action: &str, now_ms: f64) -> Result<String, JsError> {
-        let action: Action = serde_json::from_str(action).map_err(|e| JsError::new(&e.to_string()))?;
-        Ok(answer(self.wake.apply(action, now_ms as u64)))
+    /// Plays an action given as JSON from this seat. Answers `{"ok":true,"changed":…}` or `{"ok":false,"refusal":…}`.
+    pub fn apply(&mut self, action: &str, now_ms: f64, seat: u8) -> Result<String, JsError> {
+        let mv = move_of(action, now_ms, seat)?;
+        Ok(answer(self.wake.play(mv)))
     }
 
     /// What this Dor would make on this card, in points (chapter §5), or -1 if the drop would be
     /// refused now. The strip names it before the hand commits.
-    pub fn matches(&self, dor: u32, on: u32, now_ms: f64) -> i32 {
-        if self.wake.probe(Action::Place { dor, on }, now_ms as u64).is_err() {
+    pub fn matches(&self, dor: u32, on: u32, now_ms: f64, seat: u8) -> i32 {
+        if self.wake.ask(&Move { seat, at: now_ms as u64, action: Action::Place { dor, on } }).is_err() {
             return -1;
         }
         let s = &self.wake.state;
@@ -65,6 +65,16 @@ impl Engine {
             None => -1,
         }
     }
+
+    /// The journal replays from its origin to exactly this state: the WebAssembly side of the determinism check.
+    pub fn replays(&self) -> bool {
+        self.wake.replay().is_ok_and(|s| s == self.wake.state)
+    }
+}
+
+fn move_of(action: &str, now_ms: f64, seat: u8) -> Result<Move, JsError> {
+    let action: Action = serde_json::from_str(action).map_err(|e| JsError::new(&e.to_string()))?;
+    Ok(Move { seat, at: now_ms as u64, action })
 }
 
 fn answer(result: Result<bool, crate::v3::Refusal>) -> String {

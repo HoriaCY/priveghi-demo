@@ -5,7 +5,7 @@
 // Step 5: the boot in the dark (a touch strikes the match, a second brings you home), the fade and
 // the stake, the Bride's dimming, the save at every beat, another wake landing in the dark.
 import './render/style.css';
-import { Wake } from './engine';
+import { SOLO, Wake } from './engine';
 import type { Action, Card, Commit, Entry, View } from './engine';
 import { applyFixture, isFixture } from './fixtures';
 import { attachInput } from './play/input';
@@ -22,12 +22,16 @@ import { TUNING } from './tuning';
 
 const params = new URLSearchParams(location.search);
 const SAVE_KEY = 'priveghi.v3';
+/** One slot: the latest save the engine would not load, kept aside rather than discarded (R144). */
+const KEPT_ASIDE_KEY = 'priveghi.v3.refused';
+/** This table's seat: the solo hand (R142). Named at every call into the engine. */
+const SEAT = SOLO;
 const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 declare global {
   interface Window {
     /** Review mode only (`?fixture=`): the browser tests read the engine's view, so they assert what it says. */
-    priveghi?: { view(): View };
+    priveghi?: { view(): View; replays(): boolean };
   }
 }
 
@@ -139,20 +143,28 @@ function line(e: Entry): string | null {
   }
 }
 
-/** A saved wake on this device, unless `?reset` or a fixture asks for a fresh one. */
-async function openWake(now: number): Promise<Wake> {
-  if (params.has('reset')) localStorage.removeItem(SAVE_KEY);
+/**
+ * A saved wake on this device, unless `?reset` or a fixture asks for a fresh one. A save the engine
+ * will not load (a newer build's, or damaged) is kept aside, never discarded, and a fresh wake
+ * begins in the dark (R144); `keptAside` says so.
+ */
+async function openWake(now: number): Promise<{ wake: Wake; keptAside: boolean }> {
+  if (params.has('reset')) {
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(KEPT_ASIDE_KEY);
+  }
   const fixture = params.get('fixture');
   const saved = fixture ? null : localStorage.getItem(SAVE_KEY);
   const loaded = saved ? await Wake.load(saved) : null;
-  if (loaded) {
-    loaded.apply({ type: 'resume' }, now);
-    return loaded;
+  if (loaded && 'wake' in loaded) {
+    loaded.wake.apply({ type: 'resume' }, now, SEAT);
+    return { wake: loaded.wake, keptAside: false };
   }
+  if (saved && loaded) localStorage.setItem(KEPT_ASIDE_KEY, saved);
   // a fresh wake waits in the dark for the first touch (the boot); a review fixture begins on its own
   const wake = await Wake.begin(now);
   if (isFixture(fixture)) applyFixture(wake, fixture, now);
-  return wake;
+  return { wake, keptAside: loaded !== null };
 }
 
 async function main(): Promise<void> {
@@ -172,8 +184,8 @@ async function main(): Promise<void> {
     document.body.append(cardSheet());
     return;
   }
-  const wake = await openWake(Date.now());
-  if (params.has('fixture')) window.priveghi = { view: () => wake.state() };
+  const { wake, keptAside } = await openWake(Date.now());
+  if (params.has('fixture')) window.priveghi = { view: () => wake.state(), replays: () => wake.replays() };
 
   const stage = document.getElementById('stage')!;
   const rotate = document.getElementById('rotate')!;
@@ -186,7 +198,7 @@ async function main(): Promise<void> {
   pageEl.className = 'page';
   pageEl.setAttribute('aria-live', 'polite');
   document.body.append(pageEl);
-  const page = new Page(pageEl, (dor, on) => wake.matches(dor, on, Date.now()));
+  const page = new Page(pageEl, (dor, on) => wake.matches(dor, on, Date.now(), SEAT));
   const strip = document.createElement('div');
   strip.className = 'toast';
   strip.setAttribute('role', 'status');
@@ -216,9 +228,9 @@ async function main(): Promise<void> {
     if (!persist) return;
     const now = Date.now();
     const paused = wake.state().clock.paused_at !== null;
-    if (!paused) wake.apply({ type: 'pause' }, now);
+    if (!paused) wake.apply({ type: 'pause' }, now, SEAT);
     localStorage.setItem(SAVE_KEY, wake.save());
-    if (!paused) wake.apply({ type: 'resume' }, now);
+    if (!paused) wake.apply({ type: 'resume' }, now, SEAT);
   };
 
   let view: View = wake.state();
@@ -233,7 +245,7 @@ async function main(): Promise<void> {
   /** The stacks' re-flow held back while a guttered Dor fades. */
   let reflow = 0;
   const act = (a: Action) => {
-    const answer = wake.apply(a, Date.now());
+    const answer = wake.apply(a, Date.now(), SEAT);
     if (answer.ok && answer.changed) refresh();
     return answer.ok;
   };
@@ -402,6 +414,8 @@ async function main(): Promise<void> {
     act({ type: 'again' });
     save();
   };
+  /** A save kept aside at the load: named once on the strip, after the boot's line has left it (R145). */
+  let aside = keptAside;
   /** The boot's second touch, or its wait: they bring you home; the candle lights at your head; one line when the pool is open. */
   const begin = () => {
     window.clearTimeout(bootTimer);
@@ -409,6 +423,10 @@ async function main(): Promise<void> {
     if (!act({ type: 'begin' })) return;
     startClock();
     window.setTimeout(() => {
+      if (aside) {
+        aside = false;
+        window.setTimeout(() => say(`<span>${text(LINES.keptAside.ro)}</span>`), TUNING.toast_ms + TUNING.kept_aside_ms);
+      }
       if (view.phase !== 'wake' || view.day !== 1) return;
       page.say(BROUGHT_HOME.ro);
       page.render(view);
@@ -435,7 +453,7 @@ async function main(): Promise<void> {
   attachInput(stage, table, {
     probe: (ids, t) => {
       const a = ids.length ? actionFor(ids[0], t) : null;
-      return a ? wake.probe(a, Date.now()).ok : false;
+      return a ? wake.probe(a, Date.now(), SEAT).ok : false;
     },
     place: (ids, t) => {
       const id = ids[0];
