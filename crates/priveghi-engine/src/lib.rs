@@ -5,7 +5,9 @@
 
 pub mod v3;
 
-#[cfg(target_arch = "wasm32")]
+// the browser's target only (wasm-pack builds wasm32-unknown-unknown): the rules' tests also run on
+// wasm32-wasip1 under wasmtime, where wasm-bindgen has no host (RULINGS R163)
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 mod wasm;
 
 pub use v3::{Config, Wake};

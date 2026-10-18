@@ -1,0 +1,18 @@
+[package]
+name = "priveghi-shell"
+version = "0.1.0"
+description = "The native shell around the demo's web build: one web view on the bundled files"
+edition = "2021"
+publish = false
+
+# The phone links the library (staticlib); the Mac runs main.rs.
+[lib]
+name = "priveghi_shell"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.3", features = [] }
+
+# No plugin and no network crate: the privacy check's item 11 fails the build on any.
+[dependencies]
+tauri = { version = "2.12.4", features = [] }

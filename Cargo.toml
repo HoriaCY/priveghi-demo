@@ -1,5 +1,7 @@
 [workspace]
 members = ["crates/priveghi-engine"]
+# The native shell builds on its own (its own Cargo.lock), never with the rules' tests or on CI.
+exclude = ["src-tauri"]
 resolver = "2"
 
 [profile.release]

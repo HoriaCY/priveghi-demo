@@ -1,5 +1,5 @@
-// Mirrors crates/priveghi-engine/src/v3/model.rs (serde's JSON shapes) for the dead's wake. The
-// engine owns every rule; these types only let the renderer read what it is given.
+// Mirrors crates/priveghi-engine/src/v3/ (model.rs, and the save in mod.rs: serde's JSON shapes) for
+// the dead's wake. The engine owns every rule; these types only let the renderer read what it is given.
 
 /** The five kinds of longing, each a bond with one of the living (chapter §4). */
 export type Fel = 'neam' | 'dragoste' | 'frate' | 'vrajba' | 'rugaciune';
@@ -185,3 +185,15 @@ export type Refusal =
   | 'not_now' | 'no_such_card' | 'does_not_fit' | 'busy' | 'locked' | 'tired' | 'only_at_night' | 'spent' | 'full' | 'corded';
 
 export type Answer = { ok: true; changed: boolean } | { ok: false; refusal: Refusal };
+
+/** The seat of the solo hand: every move in M0–M2. The rules ignore it (docs/ENGINE_API.md, RULINGS R142). */
+export const SOLO = 0;
+
+/** One move as the journal keeps it: who (the seat), when (the renderer's clock), what. */
+export interface Move { seat: number; at: number; action: Action }
+
+/** The save, version 1 (`save()`): the state its journal starts from, every move played since, and the state they reach. */
+export interface Save { version: number; origin: State; journal: Move[]; state: State }
+
+/** Why a save did not load: a newer build wrote it, or it is no save this build can read. */
+export type SaveRefusal = 'newer' | 'unreadable';

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "none",
+  "description": "The page calls no Tauri command: nothing is granted.",
+  "windows": ["main"],
+  "permissions": []
+}

@@ -1,5 +1,6 @@
-# Builds the demo, runs every check (rules, strings, palette, privacy, the browser suite), and from
-# main deploys dist/ to GitHub Pages. Static files only: nothing runs on a server.
+# Builds the demo, runs every check (the rules natively and on wasm32-wasip1 under wasmtime, the rules
+# built for the browser, strings, palette, privacy, the browser suite), and from main deploys dist/ to
+# GitHub Pages. Static files only: nothing runs on a server.
 name: build and deploy
 
 on:
@@ -22,10 +23,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # the privacy check reads every commit's addresses
-      - uses: dtolnay/rust-toolchain@stable
+      # the version rust-toolchain.toml pins (R146): installed here, never left to rustup's auto-install
+      - uses: dtolnay/rust-toolchain@master
         with:
-          targets: wasm32-unknown-unknown
+          toolchain: 1.92.0
+          targets: wasm32-unknown-unknown, wasm32-wasip1
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
+      # the runner for the wasm32-wasip1 suite (R163), pinned like the toolchain
+      - uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "49.0.3"
       - name: wasm-pack
         run: cargo install wasm-pack --locked
       - uses: actions/setup-node@v7
@@ -35,6 +43,10 @@ jobs:
       - run: npm ci
       - name: the rules
         run: cargo test
+      - name: the rules on wasm32, under wasmtime
+        run: CARGO_TARGET_WASM32_WASIP1_RUNNER=wasmtime cargo test -p priveghi-engine --target wasm32-wasip1
+      - name: the rules for the browser, outside Vite
+        run: cargo build -p priveghi-engine --target wasm32-unknown-unknown --release
       - name: the build
         run: npm run build
       - name: strings, palette, privacy

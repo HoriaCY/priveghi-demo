@@ -1,0 +1,16 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Priveghi",
+        "url": "index.html?fixture=wake&still",
+        "width": 1280,
+        "height": 720,
+        "backgroundColor": "#110e0b",
+        "resizable": true,
+        "center": true
+      }
+    ]
+  }
+}

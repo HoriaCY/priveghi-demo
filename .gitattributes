@@ -1,0 +1,4 @@
+# The Apple signing team Xcode writes into the Xcode project never reaches a commit: git stores these
+# files through the xcodeteam filter, which `npm run shell:setup` defines in this clone (R167).
+src-tauri/gen/apple/**/project.pbxproj filter=xcodeteam
+src-tauri/gen/apple/project.yml filter=xcodeteam

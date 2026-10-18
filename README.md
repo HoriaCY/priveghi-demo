@@ -117,6 +117,21 @@ which every face must render with Ș and Ț carrying a comma (never a cedilla) a
 
 > „Osândă, șchiopătând prin țară: Ăă Ââ Îî Șș Țț”
 
+## Saves
+
+The wake is saved in this browser's localStorage (`priveghi.v3`) at the boot, every close, every
+ending, when the tab is hidden, and at another wake. A save carries a version (1) and a journal:
+every move that changed this wake since it began (its seat, its time, its action), from a full copy
+of the state it began in, so the wake replays exactly (the replay a phone's bug report needs; one
+day a server's input). A journal is only replayed by the rules that wrote it: a save whose journal
+a later build no longer replays keeps its state, and its journal begins again at that load. A save
+from before the version (`{"state": …}`) goes on where it was, its journal beginning at that load. A save this build cannot read (a newer build's, or a damaged one) is never
+thrown away: it is kept aside under `priveghi.v3.refused` (one slot, the latest), a new wake begins
+in the dark, and after „Te-au adus acasă." the strip says, once, „Priveghiul acela e din altă
+vreme." (in the sitting that found it, and never over a strip a tap called up: it waits until the
+strip is clear; a tab closed in the dark before the boot loses the line, never the save). `?reset` wipes both keys; a review fixture reads and writes neither. The format and the policy are in
+[docs/ENGINE_API.md](docs/ENGINE_API.md).
+
 ## Privacy
 
 Static files only, on GitHub Pages: no server, no accounts, no analytics, no cookies, and no
@@ -124,6 +139,16 @@ requests to any other site (the fonts are served from here). The wake is saved o
 device's localStorage. `npm run check` verifies all of it on every build, along with the commit
 history. Credits and the font licences: [credits](https://horiacy.github.io/priveghi-demo/credits.html)
 and [CREDITS.md](CREDITS.md).
+
+A native build never phones home unless the player opts in. Anything that would (a crash report,
+say) ships off, asks once, and stays off when the player says no, with the features that depend on
+it disabled. Today nothing phones home, and the privacy check's eleventh item reads the native
+shell by allowlist: its crates (as Cargo reads them), the npm tools, the config keys, the
+capabilities and the linked frameworks each name what may be there, and anything else fails the
+check until a ruling adds it; the app loads only its bundled files under a CSP of local sources;
+its own code opens no socket and names no outside URL; and no signing team is in what a commit
+would carry. A crash reporter, when one is ruled in, amends that item with its consent gate
+(Horia, 2026-10-18).
 
 ## QA
 
@@ -133,10 +158,16 @@ only a sit on a phone can answer. Every expected state in it was checked against
 
 ## Build and test
 
-Needs Rust (stable) with the `wasm32-unknown-unknown` target, `wasm-pack`, and Node 24.
+Needs Rust 1.92.0 with the `wasm32-unknown-unknown` and `wasm32-wasip1` targets (pinned in
+`rust-toolchain.toml`; on a toolchain installed before the second was pinned, `rustup target add
+wasm32-wasip1`), `wasm-pack`, Node 24, and [wasmtime](https://wasmtime.dev) for the rules on wasm32. The engine's contract (the entry
+points, the move and its seat, the actions, the refusals, the View, the save) is
+[docs/ENGINE_API.md](docs/ENGINE_API.md); changes to it are rulings.
 
 ```sh
-cargo test                       # every rule of the wake; the reference run byte for byte
+cargo test                       # every rule of the wake; the reference run byte for byte; the save and its replay
+CARGO_TARGET_WASM32_WASIP1_RUNNER=wasmtime cargo test -p priveghi-engine --target wasm32-wasip1   # the same, on wasm32
+cargo build -p priveghi-engine --target wasm32-unknown-unknown --release   # the rules for the browser, outside Vite
 npm install
 npm run build                    # wasm-pack + type-check + vite build into dist/
 npx playwright test              # the browser checks, against the built site
@@ -148,6 +179,68 @@ Every push to `main` runs all of it in GitHub Actions and deploys `dist/` to Pag
 Review views: `?fixture=start|night|played|wake|soroc|dark|preot|tarus|door|ninth|uitare` (a
 fixture is a list of actions the engine plays; it never touches the saved wake), `?still` (the
 clock stops), `?annotate`, `?typetest`, `?sheet` (every card face), `?icon`, `?reset`.
+
+## On your own phone (the native shell)
+
+`src-tauri/` is a Tauri 2 app that packs this same web build (`dist/`: the page, the scripts, the
+WebAssembly engine, the fonts) into an iPhone app: one full-screen web view on the bundled files,
+holding no rule and drawing nothing of its own. It exists so the sits can be made in the container
+a store build would be, before style-lock (Horia, 2026-10-18).
+
+**What changes against the website:** the app holds landscape itself (no rotate card); it is
+offline by construction (every file is inside the app, nothing is fetched); the wake is saved in
+the app's own storage, apart from Safari's (deleting the app is the reset, since there is no address
+bar for `?reset`); there is no browser around the table (no address bar, no browser gestures, no
+scroll bounce). **What does not change:** the same web build and renderer; sound is the same Web
+Audio as on the web, starting on the first touch; no Android yet (there is no Android SDK on this
+Mac); and this is not a store build (a debug build signed with your Apple ID, Safari's Web
+Inspector can attach to it). CI does not build the shell, and `cargo test` at the root never
+compiles it (the workspace excludes `src-tauri`, which keeps its own `Cargo.lock`).
+
+**You need:** a Mac with Xcode (26.4 here) and its iOS simulators; Rust's simulator target
+(`rustup target add aarch64-apple-ios-sim`; the phone's target is added by the first phone build);
+your Apple ID signed into Xcode (Settings → Accounts); the iPhone and its cable, with Developer
+Mode on (Settings → Privacy & Security → Developer Mode, offered after the first install attempt).
+
+```sh
+npm ci
+# in the simulator
+xcrun simctl boot "iPhone 17 Pro" && open -a Simulator
+npm run shell:ios:sim       # builds the web and the app for the simulator, installs it, launches it
+npm run shell:ios:review    # the same app opened on ?fixture=wake&still (the fifth day, the clock still)
+# on your iPhone
+npm run shell:ios           # builds the web, opens Xcode, and waits: keep this terminal open
+```
+
+In Xcode, once: the `priveghi-shell_iOS` target → Signing & Capabilities → Team: your personal
+team. Pick your iPhone as the run destination and press Run. The first launch asks you to trust
+the developer on the phone (Settings → General → VPN & Device Management). **The team stays on
+your Mac:** Xcode (or `APPLE_DEVELOPMENT_TEAM` set in your shell) writes it into
+`src-tauri/gen/apple/priveghi-shell.xcodeproj/project.pbxproj`, a file of this public repository.
+`npm run shell:setup` (which `npm run shell:ios` runs first) defines a git filter in this clone
+that stores that file, and `project.yml`, without the lines naming a team, so the file stays
+unmodified to git and no commit can carry the team. Never commit from a clone where it has not run:
+`npm run check` fails while a team is in the working tree and the filter is not set, and fails on
+any team in what is staged. With a free Apple ID the install expires after 7 days (run it from
+Xcode again); a paid developer account gives a year and TestFlight. `npm run shell:mac` builds and
+opens the same app as a Mac window (1280×720; macOS 13 or later, so that the system web view is new
+enough for the CSP's `'wasm-unsafe-eval'`); it has no menu bar items (close the window to quit) and has not been
+run yet.
+
+**What only the phone can judge:** the touch under a thumb (cards drag, the view does not move);
+the home indicator (a swipe up from the bottom edge leaves the app, and the cloth's lowest row
+lies near it); the silent switch and Web Audio (whether the chime is heard with the switch on);
+the safe areas around the Dynamic Island and the home bar. In the simulator (the device held
+upright, the app turned to landscape) the web view gave the page the upright insets (62 px top,
+34 bottom, none at the sides), so the table drew at 0.425 of its reference size, where the
+landscape insets (62 at each side, 21 below) would give 0.53: compare the table with the
+home-screen copy in Safari, and if the shell's is smaller on the phone too, that is its next fix.
+
+The generated Xcode project (`src-tauri/gen/apple/`) is committed without its build outputs;
+`npm run tauri -- ios init` was run once, and re-running it checks for CocoaPods and
+libimobiledevice, which this project never calls (it has no pods, and the Xcode route streams no
+device log). The icons are cut from the app's own `?icon` view: `npm run shell:icons`, with
+`npx vite preview --port 4173 --strictPort` running.
 
 ## The turnover to the dead's wake
 
@@ -175,7 +268,12 @@ the first brief, rulings R1–R47) was rebuilt in six steps, each on its own bra
 
 Everything above runs in Chromium under Playwright at 844×390, 1024×768 and 1280×720: zero console
 errors, no element outside the viewport, no request to any other origin, the six fonts loaded, every
-gesture and every ending reached from the engine's own state. Nothing here has run on a phone. On a
+gesture and every ending reached from the engine's own state; the same build, served under the
+native shell's CSP, breaks no directive. The shell has run only in the iOS Simulator (iPhone 17 Pro,
+iOS 26.4): the review build draws the fifth day in WKWebView
+([docs/shots/shell/wake-iphone-17-pro-simulator.png](docs/shots/shell/wake-iphone-17-pro-simulator.png)),
+and a scratch build with a diagnostic script counted no CSP violation and no error, with the six
+fonts loaded. Nothing here has run on a phone. On a
 phone, look for: dragging moves cards and not the page; sound starts after the first touch; the
 home-screen copy opens full screen; nothing sits under the notch or the home bar; leaving and
 returning resumes the wake. What

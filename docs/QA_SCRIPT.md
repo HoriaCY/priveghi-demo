@@ -271,6 +271,22 @@ calms the house; Uitare only counts the Dor you left).
 - [ ] Reload on an ended page. Expect: the same ended page (the ending is saved). Tap it, then
   reload: the dark (the save moved to the new wake).
 - [ ] `?reset` at any time. Expect: the dark; a new day one.
+- [ ] An old save, from before the version, resumes. A phone that played the demo before this
+  build reached the site already holds one: open the link. To plant one on a desktop browser: play
+  to day 2, then open `credits.html` on the same site (a page with no table, so nothing saves over
+  what you plant), and in the devtools console run
+  `const w = JSON.parse(localStorage.getItem('priveghi.v3')); localStorage.setItem('priveghi.v3', JSON.stringify({ state: w.state }))`;
+  then open the game. Expect: the same day, no dark, no new wake; after the next dawn, devtools →
+  Application → Local Storage shows `priveghi.v3` beginning `{"version":1,` again.
+- [ ] A save from a newer build is kept aside and the line is said. Plant it the same way, from
+  `credits.html`:
+  `const w = JSON.parse(localStorage.getItem('priveghi.v3')); localStorage.setItem('priveghi.v3', JSON.stringify({ ...w, version: 99 }))`;
+  then open the game. Expect: the dark, no text. Touch twice: „Te-au adus acasă.", and once the strip
+  clears, „Priveghiul acela e din altă vreme." on the strip, once. Plant it again and this time tap a
+  card about two seconds after „Te-au adus acasă.": the card keeps the strip, a second tap opens the
+  page on it, and the line comes only after the strip has cleared. Local Storage shows
+  `priveghi.v3.refused` holding the version-99 save and `priveghi.v3` the new wake; `?reset` removes
+  both. Note whether the line reads as the house's own voice or as an error message.
 
 ## 9. Run H — the plays and the skip, in detail
 
